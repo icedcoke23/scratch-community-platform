@@ -3,6 +3,7 @@
 ## 当前 Sprint: Sprint 1 + 2 (脚手架 + user 模块)
 
 ### 优先级 P0 (本周必须完成)
+- [x] 代码审计 + 修复 6 个严重问题 + 9 个中等问题
 - [ ] 本地 `mvn compile` 验证项目能编译通过
 - [ ] `docker-compose up` 验证基础设施启动正常
 - [ ] `/api/health` 接口联调通过
