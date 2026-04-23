@@ -1,85 +1,94 @@
-# 🎮 Scratch Community Platform
+# Scratch Community Platform
 
-> 面向 K12 课后教学的 Scratch 编程社区 — 融合「创作 + 社区 + OJ判题 + 竞赛 + 教学 + AI」
+面向 K12 课后教学的 Scratch 编程社区平台。
 
-## 📌 项目简介
-
-全球首个 Scratch OJ + 教学社区的融合平台，面向课后教学场景：
-
-- 🎨 **在线创作** — Scratch 3.0 编辑器（基于 scratch-gui），Remix 二次创作，云变量同步
-- 🌐 **社区分享** — 作品发布、点赞/收藏分离、新作曝光池、Wilson Score 排名、关注 Feed
-- 📝 **OJ 判题** — 三级降级判题（headless → 静态分析 → 浏览器沙箱），AI 辅助判题
-- 🏆 **竞赛系统** — 限时赛/排名赛/Remix 创意赛/虚拟比赛，Rating 积分 + 颜色标识
-- 📚 **竞赛题库** — 每日一题、题单系统、按标签刷题、学习计划
-- 👩‍🏫 **教学管理** — 作业/Rubric 评分/学情报告/智能出题/错题本
-- 🎯 **成长路径** — 等级/徽章/技能认证/里程碑/可分享证书
-- 🤖 **AI 原生** — AI 点评、AI 判题、AI 出题、AI 学情分析
-
-## 🏗️ 架构
+## 架构
 
 ```
-部署单元 = 3 + 2 个（分阶段）:
+backend/          Spring Boot 3 多模块 (JDK 17)
+├── scratch-app/          启动模块
+├── scratch-common/       公共基础 (认证/异常/审核/工具)
+├── scratch-user/         用户系统
+├── scratch-editor/       创作引擎
+├── scratch-social/       社区系统
+├── scratch-judge/        判题系统
+├── scratch-classroom/    教室管理
+├── scratch-system/       系统管理
+├── scratch-sb3/          sb3 解析库 (共享库)
+└── scratch-judge-core/   判题核心库 (共享库)
 
-MVP (Phase 1-2):
-  1. 模块化单体 (Spring Boot 3) — 14 个业务模块 + sb3 解析库 + 判题核心库
-  2. 判题沙箱 (Node.js + Docker) — scratch-vm 隔离执行（三级降级）
-  3. AI Gateway (FastAPI) — LLM 调度/缓存/降级
-
-数据层:
-  MVP: MySQL 8.0 + Redis 7 + MinIO（40 张核心表）
-  Phase 3+: + MongoDB 7 + Elasticsearch 8（按需引入）
+sandbox/          Node.js 判题沙箱 (scratch-vm headless)
+docker/           Docker Compose + Dockerfile + 初始化 SQL
+docs/             开发文档
+前期/             前期设计文档
 ```
 
-## 📂 仓库结构
+## 快速启动
 
-```
-scratch-community-platform/
-├── 前期/                    # 📋 前期调研、分析、设计文档
-│   ├── INDEX.md             # 📑 目录索引（总览）
-│   ├── 竞品分析/            # 🔍 竞品调研（15+平台四赛道深度分析）
-│   ├── 架构设计/            # 🏗️ 系统架构（含审计报告）
-│   ├── 数据库设计/          # 💾 40 张核心表设计
-│   ├── 技术选型/            # 🔧 技术栈选型（v0.2 + v0.3）
-│   ├── 需求文档/            # 📝 功能清单（v0.1 ~ v0.4）
-│   └── 头脑风暴/            # 💡 讨论记录
-├── docs/                    # 📖 开发文档（开发阶段）
-├── src/                     # 💻 源代码（开发阶段）
-└── README.md
+### 1. 启动基础设施
+
+```bash
+cd docker
+docker-compose up -d mysql redis minio
 ```
 
-## 🔗 快速导航
+### 2. 启动后端
 
-| 文档 | 说明 |
+```bash
+cd backend
+mvn clean package -DskipTests
+java -jar scratch-app/target/*.jar
+```
+
+或开发模式:
+
+```bash
+cd backend
+mvn spring-boot:run -pl scratch-app
+```
+
+### 3. 启动沙箱
+
+```bash
+cd sandbox
+npm install
+npm start
+```
+
+### 4. 验证
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+## 技术栈
+
+| 层级 | 选型 |
 |---|---|
-| [📑 前期目录索引](前期/INDEX.md) | 所有文档总目录 |
-| [🔍 竞品深度分析 v2.0](前期/竞品分析/竞品深度分析_v2.0.md) | ⭐ 15+平台四赛道深度拆解 + 40+优化建议 |
-| [🏗️ 系统设计 v0.2](前期/架构设计/系统设计草案_v0.2.md) | 模块化单体 + 沙箱 + AI Gateway |
-| [🔍 项目审计报告](前期/架构设计/项目审计报告_v0.2.md) | ⭐ 4严重 + 7中等 + 5优化问题 |
-| [💾 核心表设计](前期/数据库设计/核心表设计.md) | ⭐ 40 张表 + ER 关系 |
-| [🔧 技术栈选型 v0.3](前期/技术选型/技术栈选型_v0.3.md) | MVP存储简化 + 判题三级降级 |
-| [📝 功能清单 v0.4](前期/需求文档/功能清单_v0.4.md) | ⭐ 14模块 + 竞品优化全面采纳 |
+| 后端 | Spring Boot 3.2 + JDK 17 + MyBatis-Plus 3.5 |
+| 判题沙箱 | Node.js 18 + scratch-vm |
+| 数据库 | MySQL 8.0 + Redis 7 + MinIO |
+| 部署 | Docker + Docker Compose |
 
-## 📊 项目状态
+## 模块
 
-| 阶段 | 状态 | 说明 |
+| 模块 | 说明 | 状态 |
 |---|---|---|
-| Phase 0: 调研分析 | ✅ 完成 | 竞品分析 v2.0、架构设计 v0.2、审计修复 |
-| Phase 0.5: 技术验证 | ⏳ 待开始 | scratch-vm headless spike、项目骨架搭建 |
-| Phase 1: 核心 MVP | ⏳ 待开始 | 创作引擎 + Remix + 社区 + 判题 + 新作曝光池 |
-| Phase 2: 教学+题库 | ⏳ 待开始 | 教师管理 + 竞赛题库 + 推荐引擎 + 等级徽章 |
-| Phase 3: 竞赛+扩展 | ⏳ 待开始 | 竞赛系统 + 虚拟比赛 + 社区增强 |
-| Phase 4: 深化+创新 | ⏳ 待开始 | AI判题 + 协作编辑 + 技能认证 |
+| user | 注册/登录/关注/班级 | 🚧 开发中 |
+| editor | 项目CRUD/sb3保存解析 | 📋 待开发 |
+| social | 点赞/评论/排行榜/Feed | 📋 待开发 |
+| judge | 题目/判题/提交记录 | 📋 待开发 |
+| classroom | 作业布置/提交/批改 | 📋 待开发 |
+| system | 审核/通知/配置 | 📋 待开发 |
+| sb3-parser | sb3 深度解析库 | 📋 待开发 |
+| judge-core | 判题核心库 | 📋 待开发 |
+| sandbox | 判题沙箱服务 | ✅ 骨架完成 |
 
-## 📌 核心决策
+## 文档
 
-| 决策 | 理由 |
-|---|---|
-| 聚焦 Scratch | 降低 MVP 复杂度，先把 Scratch 做透 |
-| 架构：模块化单体 + 2 服务 | 13 微服务过度拆分，改为 1 单体 + 沙箱 + AI Gateway |
-| MVP 存储：MySQL + Redis + MinIO | Phase 1-2 去掉 MongoDB/ES，降低运维复杂度 |
-| 判题：三级降级 | headless → 静态分析 → 浏览器沙箱，逐级降级 |
-| 全面采纳竞品优化 | 40+ 建议来自 15+ 平台深度分析 |
-
-## 📄 License
-
-MIT License
+- [系统设计草案 v0.3](前期/架构设计/系统设计草案_v0.3.md)
+- [模块详细设计 v0.2](前期/架构设计/模块详细设计_v0.2.md)
+- [数据库表设计 v0.2](前期/数据库设计/核心表设计_v0.2.md)
+- [技术栈选型 v0.4](前期/技术选型/技术栈选型_v0.4.md)
+- [功能清单 v0.5](前期/需求文档/功能清单_v0.5.md)
+- [开发进度](docs/PROGRESS.md)
