@@ -265,7 +265,7 @@ CREATE TABLE IF NOT EXISTS `system_config` (
 
 -- 默认管理员 (密码: admin123, BCrypt 加密)
 INSERT INTO `user` (`username`, `password`, `nickname`, `role`) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '管理员', 'ADMIN');
+('admin', '$2b$10$y3vcNmGVf0Y903xNnhr1IefOOJsmOdTr1QqzH7txQMBIPMDmMqa76', '管理员', 'ADMIN');
 
 -- 默认系统配置
 INSERT INTO `system_config` (`config_key`, `config_value`, `description`) VALUES

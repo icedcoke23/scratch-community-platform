@@ -16,10 +16,6 @@
             <artifactId>scratch-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.scratch.community</groupId>
-            <artifactId>scratch-sb3</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>

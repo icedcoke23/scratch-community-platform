@@ -1,0 +1,12 @@
+# 生产环境配置
+# 使用方式: java -jar app.jar --spring.profiles.active=prod
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+logging:
+  level:
+    com.scratch.community: info
+    com.baomidou.mybatisplus: warn
+    root: warn

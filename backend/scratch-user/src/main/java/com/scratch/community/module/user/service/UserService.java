@@ -196,8 +196,10 @@ public class UserService {
                         .like(User::getUsername, keyword)
                         .orderByDesc(User::getCreatedAt)
         );
-        // TODO: 转换为 UserVO
-        return new Page<>();
+        // 转换为 UserVO (脱敏，不返回密码等敏感字段)
+        Page<UserVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream().map(this::toVO).toList());
+        return voPage;
     }
 
     private UserVO toVO(User user) {

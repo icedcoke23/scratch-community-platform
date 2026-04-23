@@ -1,11 +1,16 @@
 package com.scratch.community.common.auth;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * 当前登录用户上下文
+ * 不使用 @Data，避免 Lombok 生成的 equals/hashCode 涉及 ThreadLocal
  */
-@Data
+@Getter
+@Setter
+@ToString
 public class LoginUser {
 
     private Long userId;

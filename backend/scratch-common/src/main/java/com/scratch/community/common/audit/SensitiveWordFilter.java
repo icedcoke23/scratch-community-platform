@@ -5,17 +5,17 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.util.*;
-import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 敏感词过滤器 (AC 自动机简化版 - 基于 HashSet + 正则)
+ * 敏感词过滤器 (简化版 - 基于 Set 匹配)
  * MVP 阶段用简单实现，后续可替换为 DFA/AC 自动机
  */
 @Slf4j
 @Component
 public class SensitiveWordFilter {
 
-    private Set<String> sensitiveWords = new HashSet<>();
+    private volatile Set<String> sensitiveWords = ConcurrentHashMap.newKeySet();
 
     @PostConstruct
     public void init() {
@@ -80,7 +80,9 @@ public class SensitiveWordFilter {
      * 刷新词库
      */
     public void reload(List<String> words) {
-        this.sensitiveWords = new HashSet<>(words);
+        Set<String> newSet = ConcurrentHashMap.newKeySet();
+        newSet.addAll(words);
+        this.sensitiveWords = newSet;
         log.info("敏感词库已刷新，共 {} 个敏感词", sensitiveWords.size());
     }
 }

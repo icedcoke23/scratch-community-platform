@@ -1,4 +1,4 @@
-version: '3.8'
+# Docker Compose V2 不再需要 version 字段
 
 services:
   # ========== 数据库 ==========
@@ -8,10 +8,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: scratch123
       MYSQL_DATABASE: scratch_community
-      MYSQL_CHARSET: utf8mb4
-      MYSQL_COLLATION: utf8mb4_unicode_ci
     ports:
-      - "3306:3306"
+      - "3306:3306"  # 仅开发环境暴露，生产环境移除
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql

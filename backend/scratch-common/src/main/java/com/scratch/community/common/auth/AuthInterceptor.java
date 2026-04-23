@@ -37,7 +37,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 从 Header 中获取 Token
         String token = extractToken(request);
         if (token == null || !jwtUtils.validateToken(token)) {
-            writeError(response, ErrorCode.UNAUTHORIZED);
+            writeError(response, HttpServletResponse.SC_UNAUTHORIZED, ErrorCode.UNAUTHORIZED);
             return false;
         }
 
@@ -53,7 +53,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (requireRole != null) {
             String[] roles = requireRole.value();
             if (!Arrays.asList(roles).contains(loginUser.getRole())) {
-                writeError(response, ErrorCode.FORBIDDEN);
+                writeError(response, HttpServletResponse.SC_FORBIDDEN, ErrorCode.FORBIDDEN);
                 return false;
             }
         }
@@ -74,8 +74,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         return null;
     }
 
-    private void writeError(HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        response.setStatus(401);
+    private void writeError(HttpServletResponse response, int httpStatus, ErrorCode errorCode) throws IOException {
+        response.setStatus(httpStatus);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(objectMapper.writeValueAsString(R.fail(errorCode)));
     }

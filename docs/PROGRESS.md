@@ -21,16 +21,35 @@
 - [x] Docker: Dockerfile.backend
 
 ### Sprint 2: user 模块 (用户系统)
-- [x] Entity: User, UserFollow, ClassRoom
-- [x] Mapper: UserMapper, UserFollowMapper, ClassMapper
+- [x] Entity: User, UserFollow, ClassRoom, ClassStudent
+- [x] Mapper: UserMapper, UserFollowMapper, ClassMapper, ClassStudentMapper
 - [x] DTO: RegisterDTO, LoginDTO, UpdateUserDTO, ChangePasswordDTO, CreateClassDTO
 - [x] VO: UserVO, LoginVO, ClassVO
-- [x] Service: UserService (注册/登录/信息/关注)
+- [x] Service: UserService (注册/登录/信息/关注/搜索)
 - [x] Service: ClassService (创建/加入/成员管理)
 - [x] Controller: UserController (全部 API)
-- [ ] TODO: 粉丝列表/关注列表查询补全
-- [ ] TODO: 搜索用户补全
+- [x] 补全: searchUsers 返回 UserVO 分页结果
+- [ ] TODO: 粉丝列表/关注列表查询补全 (需要自定义 SQL JOIN)
+- [ ] TODO: ClassService.joinClass 补全 class_student 插入
+- [ ] TODO: ClassService.getMyClasses 补全
 - [ ] TODO: 测试用例
+
+### 代码审计 (2026-04-23)
+- [x] S1: application.yml 日志改为环境变量控制 + dev/prod profile
+- [x] S2: init.sql 管理员密码 BCrypt 哈希替换为真实值
+- [x] S3: AuthInterceptor 区分 401/403 HTTP 状态码
+- [x] S4: scratch-user 移除不必要的 scratch-sb3 依赖
+- [x] S5: Docker MySQL 移除无效环境变量
+- [x] S6: SensitiveWordFilter 线程安全修复 (ConcurrentHashMap.newKeySet)
+- [x] M2: docker-compose 移除废弃 version 字段
+- [x] M3: hutool-all 瘦身为 hutool-core
+- [x] M4: JwtUtils 移除未使用 import
+- [x] M7: LoginUser 改用 @Getter/@Setter 避免 ThreadLocal 问题
+- [x] M8: sandbox 变量类型判断修复
+- [x] M9: searchUsers 补全返回值转换
+- [x] 补充: MybatisMetaObjectHandler 自动填充处理器
+- [x] 补充: ClassStudent entity + mapper
+- [x] 补充: social/system 模块移除不必要的 sb3 依赖
 
 ### Sprint 3: editor 模块 + sb3-parser 库
 - [ ] sb3-parser: SB3Parser 入口

@@ -148,22 +148,28 @@ class JudgeWorker {
     // 遍历所有目标，提取全局变量的值
     for (const target of targets) {
       if (target.isStage) {
-        // 舞台变量
+        // 舞台变量 — Scratch 变量 type 为 '' (scalar) 或 'list'
         const variables = target.variables;
         for (const [id, variable] of Object.entries(variables)) {
-          if (variable.type === '' || variable.type === 'list') {
+          if (variable.type === 'list') {
+            // 列表取所有元素
+            const items = variable.value || [];
+            outputs.push(items.join(' '));
+          } else if (variable.value !== undefined && variable.value !== '') {
+            // 标量变量
             outputs.push(String(variable.value));
           }
         }
       }
     }
 
-    // 如果没有变量，尝试捕获 say/think 消息
+    // 如果没有变量输出，尝试捕获 say/think 消息
     if (outputs.length === 0) {
       for (const target of targets) {
         if (!target.isStage && target.visible) {
-          const sayText = target.getSayText ? target.getSayText() : '';
-          if (sayText) {
+          // scratch-vm 的 say/think 文本存储在 target 的 _sayText 属性
+          const sayText = target._sayText || '';
+          if (sayText && sayText !== '') {
             outputs.push(sayText);
           }
         }

@@ -1,7 +1,5 @@
 server:
   port: 8080
-  servlet:
-    context-path: /
 
 spring:
   application:
@@ -47,13 +45,17 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # SQL 日志: 开发环境用 StdOutImpl, 生产环境用 Slf4jImpl
+    # 通过环境变量 MYBATIS_LOG_IMPL 控制，默认 Slf4jImpl
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.slf4j.Slf4jImpl}
   global-config:
     db-config:
       id-type: auto
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
+    # 关闭 banner
+    banner: false
 
 # Scratch 自定义配置
 scratch:

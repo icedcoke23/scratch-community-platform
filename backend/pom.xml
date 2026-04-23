@@ -121,10 +121,10 @@
                 <version>${minio.version}</version>
             </dependency>
 
-            <!-- Hutool -->
+            <!-- Hutool (按需引入，不引入 hutool-all) -->
             <dependency>
                 <groupId>cn.hutool</groupId>
-                <artifactId>hutool-all</artifactId>
+                <artifactId>hutool-core</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
 
