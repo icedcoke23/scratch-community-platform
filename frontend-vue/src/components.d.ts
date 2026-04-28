@@ -63,6 +63,7 @@ declare module 'vue' {
     OAuthButtons: typeof import('./components/OAuthButtons.vue')['default']
     ProjectCard: typeof import('./components/ProjectCard.vue')['default']
     ProjectPreview: typeof import('./components/ProjectPreview.vue')['default']
+    RouteLoadingBar: typeof import('./components/RouteLoadingBar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ShareDialog: typeof import('./components/ShareDialog.vue')['default']
