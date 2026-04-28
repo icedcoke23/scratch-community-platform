@@ -282,30 +282,41 @@ Duration: 7.68s
 
 ### 🔴 高优先级
 
-| # | 问题 | 建议 | 影响 |
-|---|------|------|------|
-| 1 | init.sql `CREATE INDEX IF NOT EXISTS` 语法错误 | 移除 IF NOT EXISTS | 部署阻断 |
-| 2 | ProjectService 事件发布不一致 | 统一使用 EventPublisherHelper | 代码一致性 |
-| 3 | JudgeService Thread.sleep | 改用 CompletableFuture.delayedExecutor | 性能 |
-| 4 | CrossModuleQueryRepository God Object | 按模块拆分 | 可维护性 |
+| # | 问题 | 建议 | 影响 | 状态 |
+|---|------|------|------|------|
+| 1 | init.sql `CREATE INDEX IF NOT EXISTS` 语法错误 | 移除重复索引 | 部署阻断 | ✅ 已修复 |
+| 2 | ProjectService 事件发布不一致 | 统一使用 EventPublisherHelper | 代码一致性 | ✅ 已修复 |
+| 3 | JudgeService Thread.sleep 冗余代码 | 清理 CompletableFuture.delayedExecutor | 代码整洁 | ✅ 已修复 |
+| 4 | CrossModuleQueryRepository God Object | 按模块拆分 | 可维护性 | 📋 待办 |
 
 ### 🟡 中优先级
 
-| # | 问题 | 建议 | 影响 |
-|---|------|------|------|
-| 5 | 积分事件幂等性 | 添加 refType+refId 去重 | 数据一致性 |
-| 6 | CORS 生产配置 | 白名单化 | 安全 |
-| 7 | 前端 Token 刷新竞态 | 优化 Promise 链 | 稳定性 |
-| 8 | CI Node 版本 | 统一 Node 22 | CI 兼容性 |
+| # | 问题 | 建议 | 影响 | 状态 |
+|---|------|------|------|------|
+| 5 | 积分事件幂等性 | 添加 refType+refId 去重 | 数据一致性 | 📋 待办 |
+| 6 | CORS 生产配置 | 白名单化 | 安全 | 📋 待办 |
+| 7 | 前端 Token 刷新竞态 | 优化 Promise 链 | 稳定性 | 📋 待办 |
+| 8 | CI Node 版本 | 统一 Node 22 | CI 兼容性 | ✅ 已修复 |
 
 ### 🟢 低优先级
 
-| # | 问题 | 建议 | 影响 |
-|---|------|------|------|
-| 9 | @Deprecated 方法清理 | 移除或替换调用方 | 代码整洁 |
-| 10 | JSON 字段索引 | MySQL 8.0 JSON 索引 | 查询性能 |
-| 11 | 通知表分区 | 按时间分区 | 大数据量性能 |
-| 12 | API 文档自动生成 | OpenAPI 代码生成 | 开发效率 |
+| # | 问题 | 建议 | 影响 | 状态 |
+|---|------|------|------|------|
+| 9 | @Deprecated 方法清理 | 移除或替换调用方 | 代码整洁 | 📋 待办 |
+| 10 | JSON 字段索引 | MySQL 8.0 JSON 索引 | 查询性能 | 📋 待办 |
+| 11 | 通知表分区 | 按时间分区 | 大数据量性能 | 📋 待办 |
+| 12 | API 文档自动生成 | OpenAPI 代码生成 | 开发效率 | 📋 待办 |
+
+### ✅ 额外实施的优化（v3.6.0）
+
+| # | 优化 | 说明 |
+|---|------|------|
+| 13 | TraceId 链路追踪 | MDC + X-Trace-Id 请求头，日志自动携带 |
+| 14 | 线程池 Micrometer 监控 | 3 个线程池指标暴露到 Prometheus |
+| 15 | Resilience4j 熔断器 | 沙箱调用保护，滑动窗口 + 半开探测 |
+| 16 | @Idempotent 扩展 | ProjectController create/publish/remix |
+| 17 | ErrorCode 结构化 | 新增 4 个通用错误码 |
+| 18 | GlobalExceptionHandler 增强 | 使用 ErrorCode 枚举替代硬编码 |
 
 ---
 
@@ -313,14 +324,15 @@ Duration: 7.68s
 
 | 维度 | 评分 | 说明 |
 |------|------|------|
-| 架构设计 | ⭐⭐⭐⭐ | 模块化清晰，事件驱动解耦 |
-| 代码质量 | ⭐⭐⭐⭐ | 代码规范，注释详尽 |
+| 架构设计 | ⭐⭐⭐⭐½ | 模块化清晰，事件驱动解耦，熔断器保护 |
+| 代码质量 | ⭐⭐⭐⭐ | 代码规范，注释详尽，TraceId 链路追踪 |
 | 测试覆盖 | ⭐⭐⭐⭐ | 166 前端 + 7 后端测试 |
-| 安全性 | ⭐⭐⭐⭐ | 多层防护 |
-| 文档 | ⭐⭐⭐⭐⭐ | 极其丰富 |
-| CI/CD | ⭐⭐⭐ | 流水线完整但有改进空间 |
-| 数据库 | ⭐⭐⭐⭐ | 设计合理，索引完善 |
-| **综合** | **⭐⭐⭐⭐** | **优秀的全栈项目** |
+| 安全性 | ⭐⭐⭐⭐½ | 多层防护，幂等性扩展，结构化错误码 |
+| 文档 | ⭐⭐⭐⭐⭐ | 极其丰富，审计报告详尽 |
+| CI/CD | ⭐⭐⭐⭐ | 流水线完整，Node 22 统一 |
+| 可观测性 | ⭐⭐⭐⭐ | TraceId + 线程池监控 + 熔断器健康检查 |
+| 数据库 | ⭐⭐⭐⭐ | 设计合理，索引完善，init.sql 修复 |
+| **综合** | **⭐⭐⭐⭐½** | **优秀的全栈项目，生产就绪** |
 
 ---
 

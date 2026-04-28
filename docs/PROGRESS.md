@@ -1,6 +1,6 @@
 # 开发进度
 
-> 最后更新：2026-04-28 | 当前版本: v3.5.0
+> 最后更新：2026-04-29 | 当前版本: v3.6.0
 
 ---
 
@@ -22,10 +22,21 @@
 | 10 | CI 修复 + 文档整理 | v3.2.1 | ✅ | 2026-04-28 |
 | 11 | 全面架构优化 | v3.4.0 | ✅ | 2026-04-28 |
 | 12 | 深度优化 | v3.5.0 | ✅ | 2026-04-28 |
+| 13 | 可观测性与韧性 | v3.6.0 | ✅ | 2026-04-29 |
 
 ---
 
 ## 关键里程碑
+
+### v3.6.0 (2026-04-29) — 可观测性与韧性
+- TraceId 链路追踪: 每个请求生成唯一 TraceId (MDC)，日志自动携带
+- 线程池 Micrometer 监控: 3 个线程池指标注册到 Prometheus (active/pool/queue/completed)
+- Resilience4j 熔断器: 判题沙箱调用增加熔断保护 (滑动窗口 + 半开探测)
+- @Idempotent 扩展: ProjectController create/publish/remix 增加幂等性保护
+- ErrorCode 增强: 新增 RATE_LIMITED/RESOURCE_NOT_FOUND/METHOD_NOT_ALLOWED/IDEMPOTENT_CONFLICT
+- init.sql 修复: 移除 MySQL 8.0 不支持的语法和重复索引
+- CI Node 版本统一: 20 → 22 (ci.yml + deploy.yml + Dockerfile.frontend)
+- 第三轮深度审计报告
 
 ### v3.2.1 (2026-04-28) — CI 修复 + 文档整理
 - Dockerfile.backend 模块引用修复（CI Docker Build 通过）
@@ -90,6 +101,7 @@
 | 2026-04-28 | 31 轮 | 8.8→8.9 | CI Docker Build 修复 / init.sql 同步 / 文档整理 |
 | 2026-04-28 | 32 轮 (v3.4.0) | 8.9→9.1 | V19 索引 / Token 竞态修复 / 路径遍历防护 / RateLimit 注解 |
 | 2026-04-28 | 33 轮 (v3.5.0) | 9.1→9.3 | Feed 时间衰减 / Caffeine 缓存 / ErrorBoundary / 类型安全 |
+| 2026-04-29 | 34 轮 (v3.6.0) | 9.3→9.5 | TraceId / 线程池监控 / Resilience4j 熔断器 / 幂等性扩展 / ErrorCode 增强 |
 
 ---
 

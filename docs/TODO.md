@@ -1,6 +1,6 @@
 # 开发待办
 
-> 最后更新：2026-04-28 | 当前版本: v3.5.0
+> 最后更新：2026-04-29 | 当前版本: v3.6.0
 
 ---
 
@@ -18,6 +18,9 @@
 - **Phase 8** (Sprint 29-30): CI 修复 / 集成测试 / E2E 框架 / 质量加固
 - **Phase 9** (v3.0-v3.2): 生产就绪 — Docker Compose Prod / Nginx / Grafana / k6 / 安全深度优化
 - **Phase 10** (v3.3.0): 二次深度优化 — Role 枚举 / Redis 限流修复 / AI 缓存 / WebSocket 重连
+- **Phase 11** (v3.4.0): 全面架构优化 — V19 索引 / Token 竞态修复 / 路径遍历防护 / RateLimit 注解
+- **Phase 12** (v3.5.0): 深度优化 — Feed 时间衰减 / Caffeine 缓存 / ErrorBoundary / 类型安全
+- **Phase 13** (v3.6.0): 可观测性与韧性 — TraceId / 线程池监控 / Resilience4j 熔断器 / 幂等性 / ErrorCode
 
 </details>
 
@@ -66,4 +69,4 @@
 | CI/CD | ✅ 全部通过 | Backend + Frontend + Sandbox + Docker + Lint |
 | 踩坑记录 | 📝 104 条 | 129 条经验总结 |
 | Flyway 迁移 | 📦 19 个 | V1-V19 版本化迁移 |
-| 文档版本 | v3.5.0 | 2026-04-28 |
+| 文档版本 | v3.6.0 | 2026-04-29 |

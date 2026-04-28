@@ -6,6 +6,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## v3.6.0 (2026-04-29) — 可观测性与韧性
+
+### 🔍 可观测性增强 (P0)
+
+- **TraceId 链路追踪**: `TraceIdFilter` 为每个请求生成唯一 TraceId (MDC)，日志自动携带 `[traceId]`，支持客户端通过 `X-Trace-Id` 请求头传入
+- **线程池 Micrometer 监控**: `ThreadPoolMonitorConfig` 将 3 个业务线程池（判题/SSE/事件）的关键指标注册到 Micrometer
+  - `threadpool.active` — 活跃线程数
+  - `threadpool.pool.size` — 当前池大小
+  - `threadpool.queue.size` — 队列中等待的任务数
+  - `threadpool.completed` — 已完成任务总数
+- **线程池健康检查**: 队列使用率 >80% 时 Health 状态降为 DEGRADED
+- **日志格式增强**: application.yml 日志 pattern 增加 `[%X{traceId}]`
+
+### 🛡️ 安全与韧性 (P1)
+
+- **Resilience4j 熔断器**: JudgeService 判题沙箱调用增加熔断保护
+  - 滑动窗口 10 次调用，最少 5 次，失败率 >50% 触发熔断
+  - 30 秒后半开状态，允许 3 次探测请求
+  - 降级策略: 直接返回 RE (判题服务不可用)
+  - 健康检查: `/actuator/health` 暴露熔断器状态
+- **@Idempotent 扩展**: ProjectController 的 create/publish/remix 端点增加幂等性保护
+- **ErrorCode 增强**: 新增 4 个结构化错误码
+  - `RATE_LIMITED(9993)` — 请求过于频繁
+  - `RESOURCE_NOT_FOUND(9992)` — 资源不存在
+  - `METHOD_NOT_ALLOWED(9991)` — 请求方法不支持
+  - `IDEMPOTENT_CONFLICT(9990)` — 重复请求
+- **GlobalExceptionHandler 增强**: 404/405/415 处理器使用结构化 ErrorCode 替代硬编码数字
+
+### 🔧 后端改进
+
+- **ProjectService 事件发布统一**: `getDetail()` 和 `publish()` 中的事件发布统一使用 `EventPublisherHelper`，移除手动 try-catch
+- **JudgeService 清理**: 移除未使用的 `CompletableFuture.delayedExecutor` 调用，保留 `Thread.sleep` 指数退避
+- **init.sql 修复**: 移除 MySQL 8.0 不支持的 `CREATE INDEX IF NOT EXISTS` 语法和重复索引定义
+
+### 🔧 CI/CD 改进
+
+- **Node.js 版本统一**: CI/CD 流水线和 Dockerfile.frontend 统一升级到 Node.js 22
+  - `.github/workflows/ci.yml`: Node 20 → 22
+  - `.github/workflows/deploy.yml`: Node 20 → 22
+  - `docker/Dockerfile.frontend`: `node:20-alpine` → `node:22-alpine`
+
+### 📚 文档
+
+- **第三轮深度审计报告**: `docs/THIRD_DEEP_ANALYSIS.md` — 全面审计：编译/测试/API/架构/安全/数据库/CI
+- **README.md 更新**: 技术栈表增加熔断器/链路追踪/线程池监控，安全架构图增加 Resilience4j，开发路线增加 Phase 13
+- **docs/INDEX.md 更新**: 新增第三轮审计报告索引
+- **docs/PROGRESS.md 更新**: 新增 v3.6.0 里程碑 + 第 34 轮审计记录
+- **docs/TODO.md 更新**: 同步 Phase 11-13 已完成状态
+
+---
+
 ## v3.5.2 (2026-04-28) — 深度目录重组
 
 ### 📁 目录重构

@@ -54,11 +54,13 @@
 ### 🔒 v2.0 安全架构
 
 ```
-请求 → Nginx → [限流拦截器] → [CORS 校验] → [JWT 认证] → [角色校验] → Controller
+请求 → Nginx → [TraceId] → [限流拦截器] → [CORS 校验] → [JWT 认证] → [角色校验] → Controller
                                                         ↓
                                               [DFA 敏感词过滤]
                                                         ↓
                                               [Redisson 分布式锁]（积分等并发场景）
+                                                        ↓
+                                              [Resilience4j 熔断器]（沙箱调用保护）
                                                         ↓
                                               [子进程隔离判题]（sandbox）
 ```
@@ -70,18 +72,21 @@
 | 层级 | 选型 |
 |------|------|
 | 后端 | Spring Boot 3.2 + JDK 17 + MyBatis-Plus 3.5 |
-| 前端 | Vue 3 + TypeScript + Vite + Element Plus + Pinia |
-| 判题沙箱 | Node.js 18 + scratch-vm headless（进程隔离） |
+| 前端 | Vue 3 + TypeScript + Vite 8 + Element Plus + Pinia |
+| 判题沙箱 | Node.js 22 + scratch-vm headless（进程隔离） |
 | 数据库 | MySQL 8.0 + Redis 7 + MinIO |
 | 分布式锁 | Redisson 3.28 |
-| 接口限流 | 自研滑动窗口限流器（Redis Lua） |
+| 接口限流 | 自研滑动窗口限流器（IP 维度 + @RateLimit 注解） |
+| 熔断器 | Resilience4j（沙箱调用保护，滑动窗口 + 半开探测） |
 | 内容审核 | DFA 敏感词自动机 |
-| 异步线程池 | 3 独立线程池（判题/SSE/事件监听） |
+| 链路追踪 | TraceId（MDC + X-Trace-Id 请求头） |
+| 线程池监控 | Micrometer 指标暴露（active/pool/queue/completed） |
+| 异步线程池 | 3 独立线程池（判题/SSE/事件监听）+ 队列健康检查 |
 | 乐观锁 | MyBatis-Plus @Version（project/user/homework/ranking） |
 | 本地缓存 | Caffeine（1000 条 / 10 分钟过期） |
 | 分布式调度 | ShedLock + Redis |
 | 部署 | Docker + Docker Compose + GitHub Actions CI/CD |
-| 数据库迁移 | Flyway（V1-V18，18 个版本化迁移） |
+| 数据库迁移 | Flyway（V1-V19，19 个版本化迁移） |
 | E2E 测试 | Playwright | 最新 |
 | 性能压测 | k6 | 最新 |
 | 监控 | Prometheus + Grafana | 最新 |
@@ -95,7 +100,7 @@
 - JDK 17+
 - Maven 3.8+
 - Docker & Docker Compose
-- Node.js 18+
+- Node.js 22+
 
 ### 1. 启动基础设施
 
@@ -266,11 +271,17 @@ v3.4.0  ✅ 架构优化 — V19索引/Token竞态修复/路径遍历防护/SseT
 v3.5.0  ✅ 深度优化 — Feed时间衰减/Caffeine缓存/ErrorBoundary增强/类型安全/Token计算简化
 ```
 
-### 📋 未来: Phase 13-14
+### ✅ Phase 13: 可观测性与韧性 (v3.6.0)
 
 ```
-Phase 13  📋 测试加固        — ProjectService/FeedService/CollabService 测试覆盖
-Phase 14  📋 体验优化        — 组件拆分/i18n字典外置/PWA完善/通知归档
+v3.6.0  ✅ P0/P1 优化 — TraceId链路追踪/线程池Micrometer监控/Resilience4j熔断器/幂等性扩展/ErrorCode增强
+```
+
+### 📋 未来: Phase 14-15
+
+```
+Phase 14  📋 测试加固        — Testcontainers集成测试/ProjectService/FeedService/CollabService 测试覆盖
+Phase 15  📋 体验优化        — 组件拆分/i18n字典外置/PWA完善/通知归档/OpenAPI代码生成
 ```
 
 详细计划请查看 [docs/DEV_PLAN.md](docs/DEV_PLAN.md)
@@ -326,6 +337,7 @@ bash scripts/api-test.sh
 
 | 报告 | 说明 |
 |------|------|
+| [第三轮深度审计](docs/THIRD_DEEP_ANALYSIS.md) | v3.5.0 全面审计：编译/测试/API/架构/安全/数据库/CI + P0/P1 优化实施 |
 | [综合分析报告](docs/COMPREHENSIVE_ANALYSIS.md) | 全栈深度分析：架构 / CI / 安全 / 数据库 / API / 沙箱 |
 | [全面优化报告](docs/FULL_OPTIMIZATION_REPORT.md) | v3.4.0 优化分析：后端/前端/数据库/安全/测试 |
 | [二次审计报告](docs/SECOND_OPTIMIZATION_AUDIT.md) | v3.4.0 优化后审计：修改清单 + 风险评估 |
