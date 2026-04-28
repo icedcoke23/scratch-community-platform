@@ -192,7 +192,12 @@ public class CrossModuleQueryRepository {
 
     /**
      * 获取项目列表（Feed 流）— 支持排序
+     *
+     * @deprecated 此方法与 {@code FeedService.getFeed()} 存在重复逻辑。
+     * FeedService 的实现更完善（支持 FULLTEXT 搜索、多排序选项、点赞状态查询）。
+     * 新代码请直接使用 FeedService，本方法保留用于向后兼容。
      */
+    @Deprecated
     public List<Map<String, Object>> getProjectFeed(String sort, int offset, int limit) {
         String orderBy = "hot".equals(sort)
                 ? "p.like_count DESC, p.created_at DESC"
@@ -225,7 +230,10 @@ public class CrossModuleQueryRepository {
 
     /**
      * 获取已发布项目总数
+     *
+     * @deprecated 与 FeedService 中的 countSql 存在重复，新代码请使用 FeedService。
      */
+    @Deprecated
     public long getPublishedProjectCount() {
         Long count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM project WHERE status = 'published' AND deleted = 0",
@@ -235,7 +243,10 @@ public class CrossModuleQueryRepository {
 
     /**
      * 批量查询用户是否已点赞指定项目
+     *
+     * @deprecated 与 FeedService 中的点赞查询逻辑重复，新代码请使用 FeedService。
      */
+    @Deprecated
     public Set<Long> getLikedProjectIds(Long userId, List<Long> projectIds) {
         if (projectIds == null || projectIds.isEmpty()) return Collections.emptySet();
         String inClause = projectIds.stream().map(id -> "?").collect(Collectors.joining(","));
