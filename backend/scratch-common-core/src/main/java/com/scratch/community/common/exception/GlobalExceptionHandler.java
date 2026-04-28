@@ -4,6 +4,7 @@ import com.scratch.community.common.result.ErrorCode;
 import com.scratch.community.common.result.R;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.BindException;
@@ -31,6 +32,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
+    private boolean isProd() {
+        return "prod".equals(activeProfile) || "production".equals(activeProfile);
+    }
 
     /**
      * 业务异常 — 已知的业务错误，直接返回
@@ -113,7 +121,7 @@ public class GlobalExceptionHandler {
 
     /**
      * 兜底异常 — 所有未处理的异常
-     * <p>安全: 只记录日志，不暴露内部信息给前端
+     * <p>安全: 只记录日志，不暴露内部信息给前端。生产环境隐藏异常类名。
      */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -124,6 +132,11 @@ public class GlobalExceptionHandler {
         } else {
             log.error("系统异常 [运行时]: {}", e.getMessage(), e);
         }
-        return R.fail(ErrorCode.SYSTEM_ERROR);
+        // 生产环境: 不泄露任何内部信息; 开发环境: 返回异常类名辅助调试
+        if (isProd()) {
+            return R.fail(ErrorCode.SYSTEM_ERROR);
+        }
+        return R.fail(ErrorCode.SYSTEM_ERROR.getCode(),
+                ErrorCode.SYSTEM_ERROR.getMsg() + " [" + e.getClass().getSimpleName() + "]");
     }
 }

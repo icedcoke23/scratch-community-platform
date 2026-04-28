@@ -22,7 +22,7 @@ public class AsyncConfig {
      * 核心线程 4，最大线程 16，队列容量 100
      */
     @Bean("judgeExecutor")
-    public Executor judgeExecutor() {
+    public ThreadPoolTaskExecutor judgeExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(16);
@@ -42,7 +42,7 @@ public class AsyncConfig {
      * 核心线程 2，最大线程 8，队列容量 50
      */
     @Bean("taskExecutor")
-    public Executor taskExecutor() {
+    public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(8);
@@ -63,7 +63,7 @@ public class AsyncConfig {
      * 与 SSE 和判题线程池隔离，避免互相影响
      */
     @Bean("eventExecutor")
-    public Executor eventExecutor() {
+    public ThreadPoolTaskExecutor eventExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(8);

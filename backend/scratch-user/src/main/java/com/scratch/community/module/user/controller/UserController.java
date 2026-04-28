@@ -4,6 +4,7 @@ import com.scratch.community.common.auth.LoginUser;
 import com.scratch.community.common.auth.RequireRole;
 import com.scratch.community.common.auth.TokenBlacklistService;
 import com.scratch.community.common.auth.JwtUtils;
+import com.scratch.community.common.config.RateLimit;
 import com.scratch.community.common.result.R;
 import com.scratch.community.module.user.dto.ChangePasswordDTO;
 import com.scratch.community.module.user.dto.CreateClassDTO;
@@ -49,12 +50,14 @@ public class UserController {
     // ==================== 认证 ====================
 
     @Operation(summary = "用户注册")
+    @RateLimit(maxRequests = 5, windowSeconds = 60, keyPrefix = "register")
     @PostMapping("/user/register")
     public R<LoginVO> register(@Valid @RequestBody RegisterDTO dto) {
         return R.ok(userService.register(dto));
     }
 
     @Operation(summary = "用户登录")
+    @RateLimit(maxRequests = 10, windowSeconds = 60, keyPrefix = "login")
     @PostMapping("/user/login")
     public R<LoginVO> login(@Valid @RequestBody LoginDTO dto) {
         return R.ok(userService.login(dto));
@@ -84,6 +87,7 @@ public class UserController {
     }
 
     @Operation(summary = "刷新 Token")
+    @RateLimit(maxRequests = 20, windowSeconds = 60, keyPrefix = "refresh")
     @PostMapping("/user/refresh")
     public R<LoginVO> refresh(jakarta.servlet.http.HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
@@ -154,6 +158,7 @@ public class UserController {
     }
 
     @Operation(summary = "修改密码")
+    @RateLimit(maxRequests = 5, windowSeconds = 300, keyPrefix = "pwd")
     @PutMapping("/user/password")
     public R<Void> changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
         userService.changePassword(LoginUser.getUserId(), dto);
