@@ -5,7 +5,10 @@ import com.scratch.community.common.result.R;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.BindException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -84,6 +87,28 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public R<?> handleNoResourceFound(NoResourceFoundException e) {
         return R.fail(9994, "请求的资源不存在");
+    }
+
+    /**
+     * 405 请求方法不支持
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public R<?> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
+        log.debug("请求方法不支持: {} {}", e.getMethod(), e.getMessage());
+        return R.fail(4005, "请求方法不支持");
+    }
+
+    /**
+     * 415 不支持的媒体类型
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public R<?> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        MediaType contentType = e.getContentType();
+        String typeName = contentType != null ? contentType.toString() : "unknown";
+        log.debug("不支持的媒体类型: {}", typeName);
+        return R.fail(4006, "不支持的媒体类型");
     }
 
     /**
