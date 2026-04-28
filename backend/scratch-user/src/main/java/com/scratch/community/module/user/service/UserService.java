@@ -73,7 +73,9 @@ public class UserService {
         String refreshToken = jwtUtils.generateRefreshToken(user.getId());
 
         user.setRefreshToken(refreshToken);
-        user.setRefreshTokenExpiresAt(LocalDateTime.now().plusSeconds(jwtUtils.getRefreshTokenExpiry(refreshToken).getTime() / 1000 - System.currentTimeMillis() / 1000));
+        user.setRefreshTokenExpiresAt(java.time.LocalDateTime.ofInstant(
+                jwtUtils.getRefreshTokenExpiryDate().toInstant(),
+                java.time.ZoneId.systemDefault()));
         userMapper.updateById(user);
 
         LoginVO loginVO = new LoginVO();
@@ -102,7 +104,9 @@ public class UserService {
 
         // 存储 Refresh Token 到用户记录
         user.setRefreshToken(refreshToken);
-        user.setRefreshTokenExpiresAt(LocalDateTime.now().plusSeconds(jwtUtils.getRefreshTokenExpiry(refreshToken).getTime() / 1000 - System.currentTimeMillis() / 1000));
+        user.setRefreshTokenExpiresAt(java.time.LocalDateTime.ofInstant(
+                jwtUtils.getRefreshTokenExpiryDate().toInstant(),
+                java.time.ZoneId.systemDefault()));
         userMapper.updateById(user);
 
         LoginVO loginVO = new LoginVO();
