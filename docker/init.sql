@@ -493,79 +493,70 @@ CREATE TABLE IF NOT EXISTS `collab_participant` (
 -- ============================================================
 
 -- submission 竞赛查询索引
-CREATE INDEX IF NOT EXISTS `idx_submission_competition_user` ON `submission` (`competition_id`, `user_id`, `verdict`);
+CREATE INDEX `idx_submission_competition_user` ON `submission` (`competition_id`, `user_id`, `verdict`);
 
 -- point_log 每日签到检查优化
-CREATE INDEX IF NOT EXISTS `idx_point_log_checkin` ON `point_log` (`user_id`, `type`, `created_at`);
+CREATE INDEX `idx_point_log_checkin` ON `point_log` (`user_id`, `type`, `created_at`);
 
 -- ai_review 按项目查询最新
-CREATE INDEX IF NOT EXISTS `idx_ai_review_project_latest` ON `ai_review` (`project_id`, `created_at` DESC);
+CREATE INDEX `idx_ai_review_project_latest` ON `ai_review` (`project_id`, `created_at` DESC);
 
 -- competition 按状态+时间查询
-CREATE INDEX IF NOT EXISTS `idx_competition_status_time` ON `competition` (`status`, `start_time`, `end_time`);
-
--- V9: 竞赛报名唯一约束
-CREATE UNIQUE INDEX IF NOT EXISTS `uk_competition_user` ON `competition_registration` (`competition_id`, `user_id`);
+CREATE INDEX `idx_competition_status_time` ON `competition` (`status`, `start_time`, `end_time`);
 
 -- V9: 积分日志性能索引
-CREATE INDEX IF NOT EXISTS `idx_point_log_user` ON `point_log` (`user_id`, `created_at` DESC);
+CREATE INDEX `idx_point_log_user` ON `point_log` (`user_id`, `created_at` DESC);
 
 -- V9: AI 点评性能索引
-CREATE INDEX IF NOT EXISTS `idx_ai_review_project` ON `ai_review` (`project_id`, `created_at` DESC);
+CREATE INDEX `idx_ai_review_project` ON `ai_review` (`project_id`, `created_at` DESC);
 
 -- V9: 竞赛排名性能索引
-CREATE INDEX IF NOT EXISTS `idx_competition_ranking_score` ON `competition_ranking` (`competition_id`, `total_score` DESC);
+CREATE INDEX `idx_competition_ranking_score` ON `competition_ranking` (`competition_id`, `total_score` DESC);
 
 -- V9: 作业提交性能索引
-CREATE INDEX IF NOT EXISTS `idx_homework_submission_homework` ON `homework_submission` (`homework_id`, `created_at` DESC);
+CREATE INDEX `idx_homework_submission_homework` ON `homework_submission` (`homework_id`, `created_at` DESC);
 
 -- V9: 评论性能索引
-CREATE INDEX IF NOT EXISTS `idx_project_comment_project` ON `project_comment` (`project_id`, `created_at` DESC);
+CREATE INDEX `idx_project_comment_project` ON `project_comment` (`project_id`, `created_at` DESC);
 
 -- V9: 审核日志性能索引
-CREATE INDEX IF NOT EXISTS `idx_audit_log_content` ON `content_audit_log` (`content_type`, `content_id`, `created_at` DESC);
-
--- V13: homework_problem 索引
-CREATE INDEX IF NOT EXISTS `idx_homework_problem_homework` ON `homework_problem` (`homework_id`, `sort_order`);
-
--- V13: competition_problem 索引
-CREATE INDEX IF NOT EXISTS `idx_competition_problem_competition` ON `competition_problem` (`competition_id`, `sort_order`);
+CREATE INDEX `idx_audit_log_content` ON `content_audit_log` (`content_type`, `content_id`, `created_at` DESC);
 
 -- V17: submission 按用户查询最近提交
-CREATE INDEX IF NOT EXISTS `idx_submission_user_created` ON `submission` (`user_id`, `created_at` DESC);
+CREATE INDEX `idx_submission_user_created` ON `submission` (`user_id`, `created_at` DESC);
 
 -- V17: project 按用户查询已发布项目
-CREATE INDEX IF NOT EXISTS `idx_project_user_status_created` ON `project` (`user_id`, `status`, `created_at` DESC);
+CREATE INDEX `idx_project_user_status_created` ON `project` (`user_id`, `status`, `created_at` DESC);
 
 -- V17: user_follow 关注列表
-CREATE INDEX IF NOT EXISTS `idx_user_follow_following` ON `user_follow` (`following_id`, `created_at` DESC);
+CREATE INDEX `idx_user_follow_following` ON `user_follow` (`following_id`, `created_at` DESC);
 
 -- V17: user_follow 粉丝列表
-CREATE INDEX IF NOT EXISTS `idx_user_follow_follower` ON `user_follow` (`follower_id`, `created_at` DESC);
+CREATE INDEX `idx_user_follow_follower` ON `user_follow` (`follower_id`, `created_at` DESC);
 
 -- V17: collab_session 按项目查询
-CREATE INDEX IF NOT EXISTS `idx_collab_session_project` ON `collab_session` (`project_id`, `status`);
+CREATE INDEX `idx_collab_session_project` ON `collab_session` (`project_id`, `status`);
 
 -- V17: collab_participant 按用户查询
-CREATE INDEX IF NOT EXISTS `idx_collab_participant_user` ON `collab_participant` (`user_id`, `joined_at`);
+CREATE INDEX `idx_collab_participant_user` ON `collab_participant` (`user_id`, `joined_at`);
 
 -- V18: submission 用户做题历史
-CREATE INDEX IF NOT EXISTS `idx_submission_user_problem_time` ON `submission` (`user_id`, `problem_id`, `created_at` DESC);
+CREATE INDEX `idx_submission_user_problem_time` ON `submission` (`user_id`, `problem_id`, `created_at` DESC);
 
 -- V18: project_like 按时间排序
-CREATE INDEX IF NOT EXISTS `idx_project_like_project_time` ON `project_like` (`project_id`, `created_at` DESC);
+CREATE INDEX `idx_project_like_project_time` ON `project_like` (`project_id`, `created_at` DESC);
 
 -- V18: notification 按类型筛选未读
-CREATE INDEX IF NOT EXISTS `idx_notification_user_type_read` ON `notification` (`user_id`, `type`, `is_read`);
+CREATE INDEX `idx_notification_user_type_read` ON `notification` (`user_id`, `type`, `is_read`);
 
 -- V18: project 热门项目查询
-CREATE INDEX IF NOT EXISTS `idx_project_hot` ON `project` (`status`, `like_count` DESC, `created_at` DESC);
+CREATE INDEX `idx_project_hot` ON `project` (`status`, `like_count` DESC, `created_at` DESC);
 
 -- V18: homework_submission 学生作业查询
-CREATE INDEX IF NOT EXISTS `idx_homework_submission_student_status` ON `homework_submission` (`student_id`, `status`, `created_at` DESC);
+CREATE INDEX `idx_homework_submission_student_status` ON `homework_submission` (`student_id`, `status`, `created_at` DESC);
 
 -- V18: competition_ranking 竞赛排名查询
-CREATE INDEX IF NOT EXISTS `idx_competition_ranking_rank` ON `competition_ranking` (`competition_id`, `rank`);
+CREATE INDEX `idx_competition_ranking_rank` ON `competition_ranking` (`competition_id`, `rank`);
 
 -- ============================================================
 -- 初始数据

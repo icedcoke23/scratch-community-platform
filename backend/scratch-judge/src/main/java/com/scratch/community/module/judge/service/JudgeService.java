@@ -257,13 +257,11 @@ public class JudgeService {
                 log.warn("异步判题第 {} 次异常: submissionId={}, error={}", attempt, submissionId, e.getMessage());
             }
 
-            // 指数退避重试（1s, 2s, 4s），使用 CompletableFuture 延迟替代 Thread.sleep
+            // 指数退避重试（1s, 2s, 4s）
             if (attempt < MAX_RETRIES) {
                 long delayMs = 1000L * (1L << (attempt - 1)); // 指数退避: 1s, 2s, 4s
                 try {
-                    CompletableFuture.delayedExecutor(delayMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-                            .execute(() -> {}); // 延迟后继续
-                    Thread.sleep(delayMs); // 仍在异步线程中，阻塞等待是可接受的
+                    Thread.sleep(delayMs);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     break;

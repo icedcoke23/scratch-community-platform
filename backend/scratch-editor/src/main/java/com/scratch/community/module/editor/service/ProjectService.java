@@ -20,7 +20,6 @@ import com.scratch.community.sb3.parser.SB3Parser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +41,7 @@ public class ProjectService {
     private final FileUploadUtils fileUploadUtils;
     private final CrossModuleQueryRepository crossModuleQuery;
     private final CrossModuleWriteRepository crossModuleWrite;
-    private final ApplicationEventPublisher eventPublisher;
+    private final com.scratch.community.common.event.EventPublisherHelper eventPublisherHelper;
 
     /**
      * 创建项目
@@ -83,13 +82,11 @@ public class ProjectService {
         Project project = getAndCheck(projectId);
 
         // 通过事件驱动更新浏览数（异步，不阻塞主流程）
-        try {
-            eventPublisher.publishEvent(new ProjectViewEvent(this, projectId, userId));
-        } catch (Exception e) {
-            // 事件发布失败，降级为直接写
-            log.warn("发布浏览事件失败，降级为直接写: projectId={}", projectId);
-            crossModuleWrite.incrementProjectViewCount(projectId);
-        }
+        eventPublisherHelper.publishEvent(
+                new ProjectViewEvent(this, projectId, userId),
+                "浏览事件",
+                () -> crossModuleWrite.incrementProjectViewCount(projectId)
+        );
 
         ProjectDetailVO vo = new ProjectDetailVO();
         BeanUtils.copyProperties(project, vo);
@@ -241,7 +238,10 @@ public class ProjectService {
         projectMapper.updateById(project);
 
         // 发布积分事件
-        eventPublisher.publishEvent(new PointEvent(this, userId, PointEvent.PointAction.PUBLISH_PROJECT, projectId));
+        eventPublisherHelper.publishEvent(
+                new PointEvent(this, userId, PointEvent.PointAction.PUBLISH_PROJECT, projectId),
+                "发布项目积分事件"
+        );
     }
 
     /**
