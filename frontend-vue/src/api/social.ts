@@ -1,5 +1,5 @@
 import { get, post, del } from './request'
-import type { Project, Comment, PageResult } from '@/types'
+import type { Project, Comment, RankItem, PageResult } from '@/types'
 
 export const socialApi = {
   getFeed: (sort = 'latest', page = 1, size = 20) =>
@@ -19,7 +19,7 @@ export const socialApi = {
   deleteComment: (commentId: number) =>
     del<void>(`/social/comment/${commentId}`),
   getWeeklyRank: (topN = 10) =>
-    get<unknown[]>('/social/rank/like/weekly', { topN }),
+    get<RankItem[]>('/social/rank/like/weekly', { topN }),
   getMonthlyRank: (topN = 10) =>
-    get<unknown[]>('/social/rank/like/monthly', { topN })
+    get<RankItem[]>('/social/rank/like/monthly', { topN })
 }

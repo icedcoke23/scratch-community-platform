@@ -203,6 +203,25 @@ export interface AnalyticsData {
   }[]
 }
 
+export interface PointRankItem {
+  id: number
+  username: string
+  nickname: string
+  avatarUrl?: string
+  points: number
+  level?: number
+}
+
+export interface RankItem {
+  id: number
+  userId: number
+  username?: string
+  nickname?: string
+  avatarUrl?: string
+  likeCount?: number
+  projectCount?: number
+}
+
 export interface PageResult<T> {
   records: T[]
   total: number

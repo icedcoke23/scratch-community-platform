@@ -1,13 +1,13 @@
 import { get, post } from './request'
-import type { PointLog, PageResult } from '@/types'
+import type { PointLog, PointRankItem, PageResult } from '@/types'
 
 export const pointApi = {
   getMyPoints: () =>
-    get<unknown>('/points/me'),
+    get<{ points: number; level: number; levelName: string; nextLevelPoints: number; currentLevelPoints: number; progress: number }>('/points/me'),
   checkin: () =>
-    post<unknown>('/points/checkin'),
+    post<number>('/points/checkin'),
   getLogs: (page = 1, size = 20) =>
     get<PageResult<PointLog>>('/points/logs', { page, size }),
   getRanking: (topN = 10) =>
-    get<unknown[]>('/points/ranking', { topN })
+    get<PointRankItem[]>('/points/ranking', { topN })
 }
