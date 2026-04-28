@@ -32,6 +32,10 @@ public enum ErrorCode {
     FORBIDDEN(9996, "无权限"),
     REFRESH_TOKEN_EXPIRED(9995, "Refresh Token 已过期"),
     REFRESH_TOKEN_INVALID(9994, "Refresh Token 无效"),
+    RATE_LIMITED(9993, "请求过于频繁，请稍后再试"),
+    RESOURCE_NOT_FOUND(9992, "请求的资源不存在"),
+    METHOD_NOT_ALLOWED(9991, "请求方法不支持"),
+    IDEMPOTENT_CONFLICT(9990, "重复请求"),
 
     // ========== 用户模块 10000-19999 ==========
     USER_EXISTS(10001, "用户名已存在"),

@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public R<?> handleNoResourceFound(NoResourceFoundException e) {
-        return R.fail(9994, "请求的资源不存在");
+        return R.fail(ErrorCode.RESOURCE_NOT_FOUND);
     }
 
     /**
@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public R<?> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
         log.debug("请求方法不支持: {} {}", e.getMethod(), e.getMessage());
-        return R.fail(4005, "请求方法不支持");
+        return R.fail(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
     /**
@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
         MediaType contentType = e.getContentType();
         String typeName = contentType != null ? contentType.toString() : "unknown";
         log.debug("不支持的媒体类型: {}", typeName);
-        return R.fail(4006, "不支持的媒体类型");
+        return R.fail(ErrorCode.PARAM_ERROR.getCode(), "不支持的媒体类型: " + typeName);
     }
 
     /**

@@ -6,6 +6,7 @@ import com.scratch.community.common.exception.BizException;
 import com.scratch.community.common.result.ErrorCode;
 import com.scratch.community.common.result.R;
 import com.scratch.community.common.util.FileConstants;
+import com.scratch.community.common.idempotent.Idempotent;
 import com.scratch.community.module.editor.dto.CreateProjectDTO;
 import com.scratch.community.module.editor.dto.UpdateProjectDTO;
 import com.scratch.community.module.editor.service.ProjectService;
@@ -35,6 +36,7 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @Operation(summary = "创建项目")
+    @Idempotent
     @PostMapping("/project")
     public R<ProjectVO> create(@Valid @RequestBody CreateProjectDTO dto) {
         return R.ok(projectService.create(LoginUser.getUserId(), dto));
@@ -115,6 +117,7 @@ public class ProjectController {
     }
 
     @Operation(summary = "发布项目")
+    @Idempotent
     @PostMapping("/project/{id}/publish")
     public R<Void> publish(@PathVariable Long id) {
         projectService.publish(LoginUser.getUserId(), id);
@@ -124,6 +127,7 @@ public class ProjectController {
     // ==================== Remix ====================
 
     @Operation(summary = "Remix 项目（二次创作）")
+    @Idempotent
     @PostMapping("/project/{id}/remix")
     public R<ProjectVO> remix(@PathVariable Long id) {
         return R.ok(projectService.remix(LoginUser.getUserId(), id));

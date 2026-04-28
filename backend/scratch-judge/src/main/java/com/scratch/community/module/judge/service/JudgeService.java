@@ -212,18 +212,8 @@ public class JudgeService {
         Exception lastException = null;
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                Map<String, Object> request = new HashMap<>();
-                request.put("submissionId", submissionId);
-                request.put("sb3Url", submission.getSb3Url());
-                request.put("expectedOutput", problem.getExpectedOutput());
-                request.put("timeoutMs", judgeTimeout);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
-
-                ResponseEntity<Map> response = restTemplate.postForEntity(
-                        sandboxUrl + "/judge", entity, Map.class);
+                // 使用熔断器保护沙箱调用
+                ResponseEntity<Map> response = callSandbox(submission, problem, submissionId);
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     Map<String, Object> body = response.getBody();
@@ -285,6 +275,48 @@ public class JudgeService {
         updateProblemStats(problem, submission.getVerdict());
         log.info("异步判题完成: submissionId={}, verdict={}", submissionId, submission.getVerdict());
         return CompletableFuture.completedFuture(null);
+    }
+
+    // ==================== 沙箱调用（熔断保护） ====================
+
+    /**
+     * 调用判题沙箱（带熔断器保护）
+     *
+     * <p>当沙箱连续失败率超过 50%（滑动窗口 10 次调用，最少 5 次）时，
+     * 熔断器打开，后续请求直接快速失败，避免拖垮主线程池。
+     * 熔断器 30 秒后进入半开状态，允许 3 次探测请求。
+     *
+     * @param submission 提交记录
+     * @param problem    题目
+     * @param submissionId 提交 ID（用于日志）
+     * @return 沙箱响应
+     */
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "sandbox", fallbackMethod = "sandboxFallback")
+    @SuppressWarnings("unchecked")
+    protected ResponseEntity<Map> callSandbox(Submission submission, Problem problem, Long submissionId) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("submissionId", submissionId);
+        request.put("sb3Url", submission.getSb3Url());
+        request.put("expectedOutput", problem.getExpectedOutput());
+        request.put("timeoutMs", judgeTimeout);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+
+        return restTemplate.postForEntity(sandboxUrl + "/judge", entity, Map.class);
+    }
+
+    /**
+     * 熔断降级：沙箱不可用时直接返回 RE 结果
+     */
+    protected ResponseEntity<Map> sandboxFallback(Submission submission, Problem problem, Long submissionId, Throwable t) {
+        log.error("沙箱熔断降级: submissionId={}, error={}", submissionId, t.getMessage());
+        Map<String, Object> fallbackBody = Map.of(
+                "verdict", "RE",
+                "detail", Map.of("message", "判题服务暂时不可用（熔断降级）", "error", t.getClass().getSimpleName())
+        );
+        return ResponseEntity.status(503).body(fallbackBody);
     }
 
     // ==================== 私有方法 ====================

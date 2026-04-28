@@ -128,13 +128,30 @@ scratch:
       app-secret: ${OAUTH_QQ_APP_SECRET:}
       redirect-uri: ${OAUTH_QQ_REDIRECT_URI:http://localhost:3000/oauth/qq/callback}
 
+# Resilience4j 熔断器配置
+resilience4j:
+  circuitbreaker:
+    instances:
+      sandbox:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+  timelimiter:
+    instances:
+      sandbox:
+        timeout-duration: 35s
+
 # 日志
 logging:
   level:
     com.scratch.community: debug
     com.baomidou.mybatisplus: debug
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n"
 
 # Actuator
 management:
