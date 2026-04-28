@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## v3.5.0 (2026-04-28) — 深度架构优化 + 性能增强
+
+### ⚡ 性能优化
+
+- **FeedService 热度排序时间衰减**: 热度公式添加 `TIMESTAMPDIFF` 时间衰减因子，参考 Hacker News 算法，新内容获得初始曝光，优质内容持续排名靠前
+- **Caffeine 本地缓存**: `UserQueryRepository.getUserBasicInfo()` 添加 `@Cacheable` 缓存，10 分钟过期，减少高频跨模块查询的数据库压力
+- **CrossModuleQueryRepository 废弃标记**: `getProjectFeed()` 标记为 `@Deprecated`，消除与 FeedService 的重复代码
+
+### 🔧 后端改进
+
+- **JwtUtils.getRefreshTokenExpiryDate()**: 新增方法直接返回过期时间 Date，无需先生成 Token 再解析，简化 UserService 中的 Token 过期计算
+- **UserService Token 过期计算重构**: register() 和 login() 中的复杂日期计算替换为 `LocalDateTime.ofInstant(jwtUtils.getRefreshTokenExpiryDate().toInstant(), ...)`
+- **GlobalExceptionHandler 增强**: 添加 `HttpRequestMethodNotSupportedException` (405) 和 `HttpMediaTypeNotSupportedException` (415) 处理
+- **@RateLimit 注解实现**: 定义 + 拦截器 + 限流器缓存，支持 Controller 方法自定义限流策略
+- **PointService doAddPoints() 文档**: 添加竞态窗口安全性说明，明确 Redisson 锁保护下的安全保证
+
+### 🔧 前端改进
+
+- **ErrorBoundary 增强**: 全局错误捕获 (window.onerror + unhandledrejection)、重试次数限制 (3 次)、复制错误信息、用户友好提示
+- **API 类型安全增强**: 消除 `unknown[]`/`any` 类型，新增 `PointRankItem` 和 `RankItem` 类型定义
+
+### 📚 文档
+
+- **CHANGELOG.md**: v3.5.0 版本记录
+
+---
+
 ## v3.4.0 (2026-04-28) — 全面架构优化 + 安全加固
 
 ### 🔒 安全改进

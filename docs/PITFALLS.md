@@ -3659,3 +3659,67 @@ V19 迁移添加复合索引 `idx_point_user_type_date (user_id, type, created_a
 | 124 | **URL 拼接和重定向必须检查路径遍历（..）** | 安全防护 | 🟡 |
 | 125 | **降级方案的清理机制应在启动时无条件绑定** | 系统设计 | 🟡 |
 | 126 | **复合索引列顺序应匹配查询模式，避免 WHERE 中使用函数** | 数据库优化 | 🟡 |
+
+---
+
+## 坑 102：Feed 热度排序缺少时间衰减 — 旧内容永久霸榜
+
+**严重性**：🟡 中
+
+**现象**：
+热度公式 `(like_count + comment_count * 2 + view_count * 0.1) DESC` 没有时间衰减因子，高互动的老项目会永久占据排行榜前列，新内容无法获得曝光。
+
+**修复**：
+参考 Hacker News 算法，添加时间衰减：
+```sql
+score = (like_count + comment_count * 2 + view_count * 0.1) 
+        / POW(GREATEST(TIMESTAMPDIFF(HOUR, created_at, NOW()), 0) + 2, 1.5)
+```
+分母中的 `+2` 防止新发布内容除以 0，`POW(..., 1.5)` 控制衰减速度。
+
+**教训**：
+1. **排行榜必须考虑时间因素** — 纯互动量排序会导致马太效应
+2. **时间衰减公式需要平衡新旧内容** — 衰减太快导致内容"昙花一现"，太慢导致老内容霸榜
+
+---
+
+## 坑 103：@RateLimit 注解定义但未实现拦截器 — 空注解
+
+**严重性**：🟡 中
+
+**现象**：
+`@RateLimit` 注解已定义，但没有对应的拦截器处理它，导致标注了 `@RateLimit` 的接口不会被限流。
+
+**修复**：
+在 `RateLimitConfig` 中添加 `AnnotationRateLimitInterceptor`，按注解参数动态创建限流器并缓存。
+
+**教训**：
+1. **注解必须有对应的处理逻辑** — 定义注解只是第一步，需要拦截器/AOP 来处理
+2. **动态限流器需要缓存** — 避免每个请求都创建新的限流器实例
+
+---
+
+## 坑 104：ErrorBoundary 未捕获全局 JS 错误 — 组件边界外的错误逃逸
+
+**严重性**：🟡 中
+
+**现象**：
+Vue 的 `onErrorCaptured` 只能捕获子组件渲染错误，无法捕获：
+- 全局 `window.onerror` 错误
+- 未处理的 `Promise rejection`
+- 事件处理器中的异步错误
+
+**修复**：
+在 `ErrorBoundary` 的 `onMounted` 中添加 `window.addEventListener('error')` 和 `window.addEventListener('unhandledrejection')` 监听器。
+
+**教训**：
+1. **Vue ErrorBoundary 不等于 React ErrorBoundary** — Vue 的错误捕获机制不同，需要额外的全局监听
+2. **组件销毁时必须移除全局事件监听** — 避免内存泄漏
+
+---
+
+| # | 经验 | 适用场景 | 严重性 |
+|---|------|---------|--------|
+| 127 | **排行榜必须有时间衰减因子，防止马太效应** | 社区功能 | 🟡 |
+| 128 | **自定义注解必须实现对应的拦截器/AOP 处理逻辑** | 后端架构 | 🟡 |
+| 129 | **Vue ErrorBoundary 需要额外监听全局 JS 错误** | 前端架构 | 🟡 |
