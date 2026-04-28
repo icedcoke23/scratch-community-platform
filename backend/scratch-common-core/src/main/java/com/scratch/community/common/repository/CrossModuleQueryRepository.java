@@ -2,6 +2,7 @@ package com.scratch.community.common.repository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -90,7 +91,11 @@ public class CrossModuleQueryRepository {
 
     /**
      * 获取用户基本信息（username, nickname, avatar_url）
+     *
+     * <p>使用 Caffeine 本地缓存，10 分钟过期，最大 1000 条。
+     * 适用于高频跨模块查询（如项目详情页需要展示作者信息）。
      */
+    @Cacheable(cacheNames = "userInfo", key = "'basic:' + #userId")
     public Map<String, Object> getUserBasicInfo(Long userId) {
         return jdbcTemplate.query(
                 "SELECT username, nickname, avatar_url FROM user WHERE id = ? AND deleted = 0",
