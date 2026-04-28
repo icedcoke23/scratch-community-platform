@@ -1,7 +1,5 @@
 package com.scratch.community.common.ratelimit;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -9,20 +7,21 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Redis 分布式限流配置
  *
- * <p>当 Redis 可用时自动启用分布式限流，替代内存限流器。
- * Redis 不可用时降级为不限流（由内存限流器兜底）。
+ * <p>注册 Redis 限流拦截器到 /api/** 路径
  */
 @Configuration
-@ConditionalOnBean(RedisRateLimitInterceptor.class)
 public class RedisRateLimitConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private RedisRateLimitInterceptor rateLimitInterceptor;
+    private final RedisRateLimitInterceptor rateLimitInterceptor;
+
+    public RedisRateLimitConfig(RedisRateLimitInterceptor rateLimitInterceptor) {
+        this.rateLimitInterceptor = rateLimitInterceptor;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/api/**")
-                .order(1); // 在 AuthInterceptor 之后执行
+                .order(1);
     }
 }

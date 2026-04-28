@@ -71,7 +71,7 @@ class UserServiceTest {
             });
             when(jwtUtils.generateToken(any(), anyString(), anyString())).thenReturn("jwt.token.here");
             when(jwtUtils.generateRefreshToken(any())).thenReturn("refresh.token.here");
-            when(jwtUtils.getRefreshTokenExpiry("refresh.token.here")).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
+            when(jwtUtils.getRefreshTokenExpiryDate()).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
 
             LoginVO result = userService.register(validRegisterDTO);
 
@@ -103,7 +103,7 @@ class UserServiceTest {
             });
             when(jwtUtils.generateToken(any(), anyString(), anyString())).thenReturn("jwt.token.here");
             when(jwtUtils.generateRefreshToken(any())).thenReturn("refresh.token.here");
-            when(jwtUtils.getRefreshTokenExpiry("refresh.token.here")).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
+            when(jwtUtils.getRefreshTokenExpiryDate()).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
 
             LoginVO result = userService.register(validRegisterDTO);
 
@@ -134,7 +134,7 @@ class UserServiceTest {
             when(userMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(user);
             when(jwtUtils.generateToken(eq(1L), eq("testuser"), eq("STUDENT"))).thenReturn("jwt.token.here");
             when(jwtUtils.generateRefreshToken(eq(1L))).thenReturn("refresh.token.here");
-            when(jwtUtils.getRefreshTokenExpiry("refresh.token.here")).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
+            when(jwtUtils.getRefreshTokenExpiryDate()).thenReturn(new java.util.Date(System.currentTimeMillis() + 604800000));
 
             LoginDTO loginDTO = new LoginDTO();
             loginDTO.setUsername("testuser");

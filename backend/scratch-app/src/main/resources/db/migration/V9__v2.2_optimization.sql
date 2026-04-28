@@ -3,22 +3,13 @@
 -- 日期: 2026-04-24
 
 -- ============================================================
--- 1. 竞赛报名唯一约束：防止重复报名
+-- 1. 竞赛报名唯一约束：已在 V5 中定义 (uk_competition_user)
 -- ============================================================
--- 先清理可能存在的重复数据（保留最新的报名记录）
-DELETE cr1 FROM `competition_registration` cr1
-INNER JOIN `competition_registration` cr2
-ON cr1.competition_id = cr2.competition_id
-AND cr1.user_id = cr2.user_id
-AND cr1.id < cr2.id;
-
-ALTER TABLE `competition_registration`
-    ADD UNIQUE KEY `uk_competition_user` (`competition_id`, `user_id`);
 
 -- ============================================================
 -- 2. 提交记录性能索引：按用户+题目查询提交历史
 -- ============================================================
-CREATE INDEX `idx_submission_user_problem` ON `submission` (`user_id`, `problem_id`, `created_at` DESC);
+CREATE INDEX `idx_submission_user_problem_created` ON `submission` (`user_id`, `problem_id`, `created_at` DESC);
 
 -- ============================================================
 -- 3. 积分日志性能索引：按用户查询积分历史
@@ -33,7 +24,7 @@ CREATE INDEX `idx_ai_review_project` ON `ai_review` (`project_id`, `created_at` 
 -- ============================================================
 -- 5. 竞赛排名性能索引
 -- ============================================================
-CREATE INDEX `idx_competition_ranking_score` ON `competition_ranking` (`competition_id`, `total_score` DESC);
+CREATE INDEX `idx_competition_ranking_score_penalty` ON `competition_ranking` (`competition_id`, `total_score` DESC);
 
 -- ============================================================
 -- 6. 作业提交性能索引：按作业查询提交列表
