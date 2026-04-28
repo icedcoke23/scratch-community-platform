@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +64,9 @@ public class RateLimitConfig implements WebMvcConfigurer {
     /** AI 流式点评限流器（按 IP，每分钟 5 次，更严格） */
     private final RateLimiter aiStreamLimiter = new RateLimiter(5, 60000);
 
+    /** 注解限流器缓存: key = "maxRequests:windowMs" -> RateLimiter */
+    private final Map<String, RateLimiter> annotationLimiters = new ConcurrentHashMap<>();
+
     /** 所有限流器的集合，用于定时清理 */
     private final RateLimiter[] allLimiters = {
             globalLimiter, loginLimiter, judgeLimiter, aiReviewLimiter, aiStreamLimiter
@@ -69,6 +74,11 @@ public class RateLimitConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 注解限流（最高优先级，在全局限流之前检查）
+        registry.addInterceptor(new AnnotationRateLimitInterceptor(annotationLimiters))
+                .addPathPatterns("/api/**")
+                .order(0);
+
         // 全局限流
         registry.addInterceptor(new RateLimitInterceptor(globalLimiter))
                 .addPathPatterns("/api/**")
@@ -108,8 +118,77 @@ public class RateLimitConfig implements WebMvcConfigurer {
         for (RateLimiter limiter : allLimiters) {
             totalCleaned += limiter.cleanup();
         }
+        // 清理注解限流器
+        for (RateLimiter limiter : annotationLimiters.values()) {
+            totalCleaned += limiter.cleanup();
+        }
         if (totalCleaned > 0) {
             log.debug("限流器过期窗口清理完成，共清理 {} 个条目", totalCleaned);
+        }
+    }
+
+    /**
+     * 注解限流拦截器
+     *
+     * <p>检查 Controller 方法上的 {@link RateLimit} 注解，
+     * 如果存在则使用注解配置的限流参数，否则放行（交给后续全局拦截器处理）。
+     */
+    class AnnotationRateLimitInterceptor implements HandlerInterceptor {
+        private final Map<String, RateLimiter> limiterCache;
+
+        AnnotationRateLimitInterceptor(Map<String, RateLimiter> limiterCache) {
+            this.limiterCache = limiterCache;
+        }
+
+        @Override
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+            if (!(handler instanceof HandlerMethod handlerMethod)) {
+                return true;
+            }
+
+            RateLimit rateLimit = handlerMethod.getMethodAnnotation(RateLimit.class);
+            if (rateLimit == null) {
+                return true; // 无注解，交给后续拦截器处理
+            }
+
+            // 获取或创建限流器（按注解参数缓存）
+            String cacheKey = rateLimit.maxRequests() + ":" + rateLimit.windowSeconds() * 1000L;
+            RateLimiter limiter = limiterCache.computeIfAbsent(cacheKey,
+                    k -> new RateLimiter(rateLimit.maxRequests(), rateLimit.windowSeconds() * 1000L));
+
+            // 构建限流 key
+            String key = getClientIp(request);
+            if (!rateLimit.keyPrefix().isEmpty()) {
+                key = rateLimit.keyPrefix() + ":" + key;
+            }
+
+            RateLimiter.AcquireResult result = limiter.tryAcquireWithInfo(key);
+
+            response.setHeader("X-RateLimit-Limit", String.valueOf(rateLimit.maxRequests()));
+            response.setHeader("X-RateLimit-Remaining", String.valueOf(Math.max(0, result.remaining)));
+
+            if (!result.acquired) {
+                response.setStatus(429);
+                response.setContentType("application/json;charset=UTF-8");
+                response.setHeader("Retry-After", String.valueOf(result.retryAfterSeconds));
+                response.getWriter().write("{\"code\":42900,\"msg\":\"请求过于频繁，请稍后再试\",\"data\":null}");
+                return false;
+            }
+            return true;
+        }
+
+        private String getClientIp(HttpServletRequest request) {
+            String ip = request.getHeader("X-Real-IP");
+            if (ip != null && !ip.isBlank()) return ip.trim();
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                String[] ips = forwarded.split(",");
+                for (int i = ips.length - 1; i >= 0; i--) {
+                    String candidate = ips[i].trim();
+                    if (!"unknown".equalsIgnoreCase(candidate) && !candidate.isEmpty()) return candidate;
+                }
+            }
+            return request.getRemoteAddr();
         }
     }
 

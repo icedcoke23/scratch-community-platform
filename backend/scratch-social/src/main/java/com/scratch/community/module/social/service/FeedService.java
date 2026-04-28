@@ -36,9 +36,12 @@ public class FeedService {
         if (offset < 0) offset = 0;
 
         // 白名单校验排序参数，防 SQL 注入
+        // 热度公式：互动分 / (时间衰减因子 + 2)^1.5
+        // 参考 Hacker News 算法，新内容获得初始曝光，优质内容持续排名靠前
         String orderBy;
         if ("hot".equals(sort)) {
-            orderBy = "(p.like_count + p.comment_count * 2 + p.view_count * 0.1) DESC";
+            orderBy = "(p.like_count + p.comment_count * 2 + p.view_count * 0.1) " +
+                    "/ POW(GREATEST(TIMESTAMPDIFF(HOUR, p.created_at, NOW()), 0) + 2, 1.5) DESC";
         } else {
             orderBy = "p.created_at DESC";
         }
