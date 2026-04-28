@@ -210,11 +210,22 @@ public class JwtUtils {
      * 获取 Refresh Token 的过期时间
      *
      * @param token Refresh Token
-     * @return 过期时间（毫秒时间戳）
+     * @return 过期时间（Date）
      */
     public Date getRefreshTokenExpiry(String token) {
         Claims claims = parseRefreshToken(token);
         return claims.getExpiration();
+    }
+
+    /**
+     * 获取新 Refresh Token 的过期时间（基于当前时间 + 配置的过期时长）
+     *
+     * <p>用于注册/登录时直接获取过期时间，无需先生成 Token 再解析。
+     *
+     * @return 过期时间（Date）
+     */
+    public Date getRefreshTokenExpiryDate() {
+        return new Date(System.currentTimeMillis() + refreshExpiration);
     }
 
     /**

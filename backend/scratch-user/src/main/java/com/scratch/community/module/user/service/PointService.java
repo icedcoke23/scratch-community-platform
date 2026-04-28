@@ -245,24 +245,37 @@ public class PointService {
     }
 
     /**
-     * 实际执行积分累加（数据库原子操作）
+     * 实际执行积分累加（数据库操作）
      *
-     * 使用单条 UPDATE 同时更新积分和等级，减少竞态窗口。
-     * totalPoints 从 UPDATE 后的 SELECT 获取，在有锁保护下是安全的。
-     * 无锁降级模式下，totalPoints 可能有微小偏差（可接受）。
+     * <p>并发安全说明:
+     * <ul>
+     *   <li>UPDATE 和 SELECT 之间存在理论上的竞态窗口（约 1-2ms）</li>
+     *   <li>在有 Redisson 分布式锁保护下，此窗口不会被并发访问，totalPoints 是准确的</li>
+     *   <li>Redisson 不可用时的无锁降级模式下，totalPoints 可能有微小偏差（极端并发场景），
+     *       但积分累加本身是原子的（GREATEST(points + ?, 0)），不会导致积分丢失</li>
+     *   <li>PointLog 中的 totalPoints 仅用于记录展示，微小偏差不影响业务正确性</li>
+     * </ul>
+     *
+     * <p>为什么不使用 UPDATE ... RETURNING:
+     * MySQL 不支持 UPDATE ... RETURNING 语法（PostgreSQL 支持）。
+     * MySQL 8.0+ 的 CTE + UPDATE 也无法在单条语句中同时返回更新后的值。
+     * 因此当前的 UPDATE + SELECT 方案是 MySQL 下的最优选择。
      */
     private int doAddPoints(Long userId, int points, String type, String refType, Long refId, String remark) {
-        // 原子更新积分（GREATEST 防止负数）
+        // Step 1: 原子更新积分（GREATEST 防止负数）
+        // 此操作是原子的，即使并发执行也不会丢失积分
         jdbcTemplate.update(
                 "UPDATE user SET points = GREATEST(points + ?, 0) WHERE id = ?",
                 points, userId);
 
-        // 获取更新后的积分和等级（单次查询，减少竞态窗口）
+        // Step 2: 读取更新后的积分值
+        // 注意: 在无锁降级模式下，此处读到的值可能已被其他并发 UPDATE 修改
+        // 但在 Redisson 锁保护下，此值是准确的
         Integer newTotal = jdbcTemplate.queryForObject(
                 "SELECT COALESCE(points, 0) FROM user WHERE id = ?", Integer.class, userId);
         int total = newTotal != null ? newTotal : 0;
 
-        // 更新等级（积分已确定，等级计算无并发问题）
+        // Step 3: 更新等级（基于最新积分计算）
         int newLevel = calculateLevel(total);
         jdbcTemplate.update("UPDATE user SET level = ? WHERE id = ? AND level != ?", newLevel, userId, newLevel);
 
