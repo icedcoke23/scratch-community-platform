@@ -1,32 +1,17 @@
 <template>
-  <div class="route-loading-bar" :class="{ active: isLoading, done: isDone }"></div>
+  <div
+    v-if="visible"
+    class="route-loading-bar"
+    :class="{ active: loading, done: !loading }"
+  >
+    <div class="bar-inner" />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouteLoading } from '@/composables/useRouteLoading'
 
-/**
- * 路由加载进度条组件
- *
- * 替代原有的原生 DOM 操作方式，使用 Vue 组件 + CSS transition 实现。
- * 在路由切换时显示顶部进度条动画。
- */
-const isLoading = ref(false)
-const isDone = ref(false)
-
-const router = useRouter()
-
-router.beforeEach(() => {
-  isLoading.value = true
-  isDone.value = false
-})
-
-router.afterEach(() => {
-  isLoading.value = false
-  isDone.value = true
-  setTimeout(() => { isDone.value = false }, 300)
-})
+const { loading, visible } = useRouteLoading()
 </script>
 
 <style scoped>
@@ -34,22 +19,27 @@ router.afterEach(() => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--primary, #4F46E5);
+  width: 100%;
+  height: 3px;
   z-index: 9999;
-  transition: width 0.3s ease;
   pointer-events: none;
 }
 
-.route-loading-bar.active {
-  width: 70%;
-  transition: width 0.8s ease;
+.bar-inner {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #409eff, #67c23a);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
 }
 
-.route-loading-bar.done {
+.route-loading-bar.active .bar-inner {
+  width: 80%;
+  transition: width 2s ease;
+}
+
+.route-loading-bar.done .bar-inner {
   width: 100%;
-  opacity: 0;
-  transition: width 0.2s ease, opacity 0.3s ease 0.2s;
+  transition: width 0.3s ease;
 }
 </style>

@@ -3567,3 +3567,95 @@ V17 迁移文件所有 `CREATE INDEX` 语句添加 `IF NOT EXISTS`。
 ---
 
 *v3.3.0 更新（二次审计）：新增坑 93-96（关注竞态/postMessage 安全/seccomp 冲突/分页限制），经验总结 121 条。所有 96 条坑已修复。*
+
+---
+
+## 坑 97：前端 Token 刷新竞态条件 — refreshPromise 过早清除
+
+**严重性**：🔴 高
+
+**现象**：
+多个请求同时 401 时，第一个触发 Token 刷新，其余加入 `pendingRequests` 队列。刷新成功后 `retryPendingRequests()` 重试队列中的请求，但 `refreshPromise.finally()` 在 `then/catch` 之后立即执行，过早清除了 `refreshPromise`。如果重试中的请求极快再次 401，会触发新的刷新请求。
+
+**修复**：
+引入 `isRetryingPending` 标志，在 `finally` 中判断是否正在重试队列。如果是，延迟 100ms 再清除 `refreshPromise`，并将 `retryPendingRequests()` 移入 `doRefreshToken()` 内部。
+
+**教训**：
+1. **Promise 链的 finally 在 then/catch 微任务之后立即执行** — 如果 then/catch 中有异步操作，finally 可能过早执行
+2. **防并发的共享 Promise 必须考虑清除时机** — 清除操作应放在所有后续处理完成后
+
+---
+
+## 坑 98：路由加载进度条使用 DOM 操作 — 耦合度高
+
+**严重性**：🟡 中
+
+**现象**：
+路由加载进度条使用 `document.getElementById('route-loading-bar')` 直接操作 DOM，依赖 HTML 中存在特定元素，与 Vue 响应式系统脱节。
+
+**修复**：
+创建 `useRouteLoading()` composable + `RouteLoadingBar.vue` 组件，使用 Vue 响应式状态管理进度条显隐。Router guard 调用 composable 的 `start()/finish()` 方法。
+
+**教训**：
+1. **Vue 项目中应优先使用响应式状态而非 DOM 操作** — 即使是全局 UI 状态也应通过 composable 管理
+2. **composable 模块顶层调用可实现跨组件共享** — 类似 Pinia store 的效果
+
+---
+
+## 坑 99：API 版本重定向未检查路径遍历
+
+**严重性**：🟡 中
+
+**现象**：
+`ApiVersionRedirectConfig` 将 `/api/xxx` 重定向到 `/api/v1/xxx`，使用 `uri.substring(4)` 直接拼接，未检查 URI 是否包含 `..` 路径遍历字符。
+
+**修复**：
+在重定向前检查 `uri.contains("..")`，如果包含则返回 400 Bad Request。
+
+**教训**：
+1. **所有 URL 拼接操作都应检查路径遍历** — 特别是重定向场景
+2. **Spring MVC 的 URI 规范化不能替代显式安全检查** — 防御深度原则
+
+---
+
+## 坑 100：SseTokenService 内存清理器仅在 Redis 不可用时启动
+
+**严重性**：🟡 中
+
+**现象**：
+`SseTokenService` 的 `cleaner.scheduleAtFixedRate()` 只在 `!redisAvailable` 时启动。如果构造时 Redis 可用，但运行时 Redis 断连降级到内存存储，清理器未启动，内存 Token 不会被清理。
+
+**修复**：
+将清理器启动移到构造函数中无条件执行（`if (!redisAvailable)` 仅用于日志提示）。
+
+**教训**：
+1. **降级方案的清理机制必须在启动时就绑定** — 不能依赖运行时状态判断
+2. **ScheduledExecutorService 启动开销极小** — 无条件启动不会有性能问题
+
+---
+
+## 坑 101：point_log 表缺少复合索引导致今日积分查询全表扫描
+
+**严重性**：🟡 中
+
+**现象**：
+`getTodayPointsByType()` 按 `user_id + type + DATE(created_at)` 查询，`hasCheckedInToday()` 按 `user_id + type + created_at` 查询，但 `point_log` 表只有 `user_id` 单列索引。
+
+**修复**：
+V19 迁移添加复合索引 `idx_point_user_type_date (user_id, type, created_at)` 和 `idx_point_user_date (user_id, created_at)`。
+
+**教训**：
+1. **WHERE 条件中的函数（如 DATE()）会导致索引失效** — 考虑改用范围查询 `created_at >= CURDATE()`
+2. **复合索引的列顺序应匹配查询模式** — 高选择性列在前
+
+---
+
+## 更新后的经验总结（完整版）
+
+| # | 经验 | 适用场景 | 严重性 |
+|---|------|---------|--------|
+| 122 | **Promise finally 在 then/catch 微任务后立即执行，异步操作需延迟清除共享状态** | 前端并发 | 🔴 |
+| 123 | **Vue 项目中全局 UI 状态应通过 composable 管理，避免 DOM 操作** | 前端架构 | 🟡 |
+| 124 | **URL 拼接和重定向必须检查路径遍历（..）** | 安全防护 | 🟡 |
+| 125 | **降级方案的清理机制应在启动时无条件绑定** | 系统设计 | 🟡 |
+| 126 | **复合索引列顺序应匹配查询模式，避免 WHERE 中使用函数** | 数据库优化 | 🟡 |

@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## v3.4.0 (2026-04-28) — 全面架构优化 + 安全加固
+
+### 🔒 安全改进
+
+- **API 版本重定向路径遍历防护**: `ApiVersionRedirectConfig` 新增 URI `..` 检查，拒绝可疑的路径遍历请求，返回 400 Bad Request
+- **SB3 上传 ZIP 路径遍历增强**: `SB3Unzipper` 在原有检查基础上增加 `Paths.get().normalize()` 规范化，防止编码绕过（如 `..%2F`）
+
+### ⚡ 性能优化
+
+- **V19 数据库索引迁移**: 添加 4 个缺失的复合索引
+  - `idx_point_user_type_date (user_id, type, created_at)` — 优化今日积分查询
+  - `idx_point_user_date (user_id, created_at)` — 优化积分时间线
+  - `idx_notification_user_time (user_id, created_at DESC)` — 优化通知列表
+  - `idx_project_user_status_time (user_id, status, created_at DESC)` — 优化用户项目列表
+
+### 🔧 后端改进
+
+- **CrossModuleQueryRepository 模块化拆分**: 新增 `ProjectQueryRepository` 和 `UserQueryRepository`，按模块拆分跨模块查询，原 `CrossModuleQueryRepository` 保留向后兼容
+- **异步判题指数退避重试**: `JudgeService.judgeAsync()` 重试间隔从线性递增 (1s, 2s, 3s) 改为指数退避 (1s, 2s, 4s)，使用 `CompletableFuture.delayedExecutor()` 替代 `Thread.sleep`
+- **SseTokenService 清理机制完善**: 内存清理器在构造函数中无条件启动，覆盖 Redis 运行时断连的边界情况
+
+### 🔧 前端改进
+
+- **Token 刷新竞态条件修复**: 引入 `isRetryingPending` 标志，防止 `refreshPromise.finally()` 过早清除共享状态。将 `retryPendingRequests()` 移入 `doRefreshToken()` 内部，确保重试完成后再清除
+- **路由进度条 Vue 组件化**: 新增 `RouteLoadingBar.vue` 组件 + `useRouteLoading()` composable，替代原 `document.getElementById` DOM 操作方案
+- **API 层类型安全改进**: `post<T>` / `put<T>` 的 `data` 参数类型从 `Record<string, unknown>` 改为 `unknown`，支持更灵活的类型推断
+
+### 📚 文档
+
+- **FULL_OPTIMIZATION_REPORT.md**: 全面优化分析报告（后端/前端/数据库/安全/测试）
+- **SECOND_OPTIMIZATION_AUDIT.md**: 二次审计报告（修改清单 + 风险评估 + 兼容性检查）
+- **PITFALLS.md**: 新增坑 97-101（Token 刷新竞态/路由进度条/路径遍历/SseToken 清理/索引缺失），经验总结 126 条
+
+---
+
 ## v3.3.0 (2026-04-28) — 二次深度优化 + 安全加固
 
 ### 🔒 安全改进

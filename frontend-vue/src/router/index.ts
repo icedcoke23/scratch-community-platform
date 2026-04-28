@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useRouteLoading } from '@/composables/useRouteLoading'
+
+const { start: startLoading, finish: finishLoading } = useRouteLoading()
 
 const router = createRouter({
   history: createWebHistory(),
@@ -149,20 +152,11 @@ const router = createRouter({
   ]
 })
 
-// 路由加载进度条控制
-function getLoadingBar(): HTMLElement | null {
-  return document.getElementById('route-loading-bar')
-}
-
 // 路由守卫
 let tokenValidated = false
 
 router.beforeEach(async (to) => {
-  // 显示加载进度条
-  const bar = getLoadingBar()
-  if (bar) {
-    bar.className = 'active'
-  }
+  startLoading()
 
   const userStore = useUserStore()
 
@@ -190,12 +184,7 @@ router.afterEach((to) => {
     document.title = `${title} - Scratch 社区`
   }
 
-  // 隐藏加载进度条
-  const bar = getLoadingBar()
-  if (bar) {
-    bar.className = 'done'
-    setTimeout(() => { bar.className = '' }, 300)
-  }
+  finishLoading()
 })
 
 export default router

@@ -1,5 +1,7 @@
 <template>
   <el-config-provider :locale="zhCn">
+    <!-- 路由加载进度条（Vue 组件化，替代原 DOM 操作方案） -->
+    <RouteLoadingBar />
     <div class="app-layout">
       <!-- 顶部导航 -->
       <AppHeader
@@ -58,6 +60,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import MobileNav from '@/components/MobileNav.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
+import RouteLoadingBar from '@/components/RouteLoadingBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n } from '@/composables/useI18n'
 import { useNavigation } from '@/composables/useNavigation'
