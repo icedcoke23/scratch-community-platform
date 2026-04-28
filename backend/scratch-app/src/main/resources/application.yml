@@ -1,0 +1,164 @@
+server:
+  port: 8080
+  # 生产环境建议通过反向代理(如 Nginx)处理 HTTPS
+  # 如需内嵌 HTTPS，取消以下注释并配置证书
+  # ssl:
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: ${SSL_KEYSTORE_PASSWORD}
+  #   key-store-type: PKCS12
+  tomcat:
+    # 限制最大并发连接数，防止资源耗尽
+    max-connections: 500
+    accept-count: 100
+    # 连接超时
+    connection-timeout: 10000
+
+spring:
+  application:
+    name: scratch-community
+
+  # 数据源
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:scratch_community}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:scratch123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      # 连接泄漏检测阈值（ms），超过此时间未归还的连接会被回收并打印日志
+      leak-detection-threshold: 60000
+      # 连接校验
+      connection-test-query: SELECT 1
+
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+      # 连接超时
+      timeout: 5000
+
+  # 文件上传
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  # Jackson
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # SQL 日志: 开发环境用 StdOutImpl, 生产环境用 Slf4jImpl
+    # 通过环境变量 MYBATIS_LOG_IMPL 控制，默认 Slf4jImpl
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.slf4j.Slf4jImpl}
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    # 关闭 banner
+    banner: false
+
+# Flyway 数据库版本管理
+spring.flyway:
+  enabled: true
+  locations: classpath:db/migration
+  baseline-on-migrate: true
+  baseline-version: 0
+  validate-on-migrate: true
+  out-of-order: false
+
+# Scratch 自定义配置
+scratch:
+  jwt:
+    # ⚠️ 生产环境必须通过环境变量 JWT_SECRET 设置密钥
+    # 默认值仅用于开发环境，JwtUtils 会在 prod 环境强制校验
+    secret: ${JWT_SECRET:scratch-community-secret-key-at-least-32bytes-long!!}
+    refresh-secret: ${JWT_REFRESH_SECRET:scratch-community-refresh-secret-key-at-least-32b}
+    expiration: ${JWT_EXPIRATION:3600000}       # Access Token: 1 小时
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # Refresh Token: 7 天
+  # 密码策略（RegisterDTO 中校验）:
+  # - 最小长度: 8 位
+  # - 必须包含: 至少 1 个字母 + 至少 1 个数字
+  # - 推荐包含: 特殊字符（非强制）
+  # - 加密方式: BCrypt (strength=10)
+  # - 用户名: 3-50 字符，仅允许字母数字下划线
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket-prefix: scratch-
+  judge:
+    sandbox-url: ${SANDBOX_URL:http://localhost:8081}
+    timeout: 30000
+  # AI 点评配置（LLM 模式，未配置时自动降级为规则引擎）
+  ai:
+    enabled: ${AI_ENABLED:false}
+    provider: ${AI_PROVIDER:openai}
+    api-key: ${AI_API_KEY:}
+    base-url: ${AI_BASE_URL:https://api.openai.com/v1}
+    model: ${AI_MODEL:gpt-4o-mini}
+    timeout: ${AI_TIMEOUT:30000}
+    max-tokens: ${AI_MAX_TOKENS:2000}
+
+  # 第三方登录配置
+  oauth:
+    wechat:
+      app-id: ${OAUTH_WECHAT_APP_ID:}
+      app-secret: ${OAUTH_WECHAT_APP_SECRET:}
+    qq:
+      app-id: ${OAUTH_QQ_APP_ID:}
+      app-secret: ${OAUTH_QQ_APP_SECRET:}
+      redirect-uri: ${OAUTH_QQ_REDIRECT_URI:http://localhost:3000/oauth/qq/callback}
+
+# 日志
+logging:
+  level:
+    com.scratch.community: debug
+    com.baomidou.mybatisplus: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      sla:
+        http.server.requests: 100ms,200ms,500ms,1s,5s
+
+# SpringDoc (Swagger)
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  default-produces-media-type: application/json

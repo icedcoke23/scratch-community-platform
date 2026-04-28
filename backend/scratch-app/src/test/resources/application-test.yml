@@ -1,0 +1,40 @@
+# API 集成测试配置 — 使用 H2 内存数据库 + Mock Redis
+spring:
+  main:
+    # 允许 TestRedisMockConfig 的 mock Bean 覆盖 RedissonConfig 的生产 Bean
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MYSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  # 排除 Redis 自动配置，使用 TestRedisMockConfig 提供的 MockBean
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+# 禁用 MinIO（测试不涉及文件上传）
+minio:
+  endpoint: http://localhost:9000
+  access-key: test
+  secret-key: test
+  bucket: test
+
+# JWT 测试密钥
+jwt:
+  secret: test-secret-key-at-least-32-bytes-long-for-integration-test!!!
+  expiration: 86400000
+
+# AI 点评（禁用 LLM）
+scratch:
+  ai:
+    enabled: false
+
+# 日志
+logging:
+  level:
+    com.scratch.community: DEBUG
+    org.springframework.test: INFO

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5"/>
+      <stop offset="100%" style="stop-color:#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <g transform="translate(256,270) scale(1.1)">
+    <ellipse cx="0" cy="20" rx="95" ry="80" fill="#FFB800"/>
+    <circle cx="0" cy="-65" r="72" fill="#FFB800"/>
+    <polygon points="-55,-120 -35,-160 -15,-115" fill="#FFB800"/>
+    <polygon points="-50,-118 -35,-150 -20,-115" fill="#FF8C00"/>
+    <polygon points="55,-120 35,-160 15,-115" fill="#FFB800"/>
+    <polygon points="50,-118 35,-150 20,-115" fill="#FF8C00"/>
+    <ellipse cx="-25" cy="-70" rx="14" ry="16" fill="white"/>
+    <ellipse cx="25" cy="-70" rx="14" ry="16" fill="white"/>
+    <circle cx="-22" cy="-68" r="8" fill="#1E1E2E"/>
+    <circle cx="28" cy="-68" r="8" fill="#1E1E2E"/>
+    <circle cx="-20" cy="-70" r="3" fill="white"/>
+    <circle cx="30" cy="-70" r="3" fill="white"/>
+    <ellipse cx="0" cy="-48" rx="8" ry="5" fill="#FF8C00"/>
+    <path d="M-20,-40 Q0,-30 20,-40" fill="none" stroke="#1E1E2E" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-70" y1="-50" x2="-30" y2="-45" stroke="#1E1E2E" stroke-width="2.5"/>
+    <line x1="-68" y1="-38" x2="-30" y2="-38" stroke="#1E1E2E" stroke-width="2.5"/>
+    <line x1="70" y1="-50" x2="30" y2="-45" stroke="#1E1E2E" stroke-width="2.5"/>
+    <line x1="68" y1="-38" x2="30" y2="-38" stroke="#1E1E2E" stroke-width="2.5"/>
+    <ellipse cx="0" cy="30" rx="55" ry="50" fill="#FFD54F"/>
+    <ellipse cx="-40" cy="95" rx="28" ry="14" fill="#FFB800"/>
+    <ellipse cx="40" cy="95" rx="28" ry="14" fill="#FFB800"/>
+  </g>
+</svg>

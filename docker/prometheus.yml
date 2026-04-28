@@ -1,0 +1,51 @@
+# Prometheus 配置 - Scratch Community Platform
+# 用于监控后端服务
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 告警规则
+rule_files:
+  - "alert_rules.yml"
+
+# 告警管理器
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# 监控目标
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Scratch Backend 应用监控
+  - job_name: 'scratch-backend'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['backend:8080']
+        labels:
+          application: 'scratch-community'
+          environment: 'production'
+    # 健康检查
+    health_path: '/api/health'
+    # 采集超时
+    scrape_timeout: 10s
+
+  # Node Exporter (系统监控, 可选)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+
+  # MySQL Exporter (数据库监控, 可选)
+  # - job_name: 'mysql'
+  #   static_configs:
+  #     - targets: ['mysqld-exporter:9104']
+
+  # Redis Exporter (缓存监控, 可选)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

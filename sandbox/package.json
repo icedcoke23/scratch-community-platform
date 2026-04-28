@@ -1,0 +1,25 @@
+{
+  "name": "scratch-judge-sandbox",
+  "version": "0.3.0",
+  "description": "Scratch 判题沙箱服务 - 基于 scratch-vm headless（进程隔离版）",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --max-old-space-size=1024 src/server.js",
+    "dev": "nodemon src/server.js",
+    "health": "curl -s http://localhost:8081/health | node -e \"process.stdin.on('data',d=>console.log(JSON.parse(d).status))\""
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "scratch-vm": "^2.1.0",
+    "adm-zip": "^0.5.10",
+    "ioredis": "^5.3.2",
+    "uuid": "^9.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

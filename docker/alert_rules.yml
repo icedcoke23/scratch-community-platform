@@ -1,0 +1,79 @@
+# Prometheus 告警规则 - Scratch Community Platform
+
+groups:
+  - name: scratch-backend-alerts
+    rules:
+      # 服务宕机告警
+      - alert: ServiceDown
+        expr: up{job="scratch-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scratch Backend 服务宕机"
+          description: "服务已停止响应超过 1 分钟"
+
+      # 高错误率告警
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count[5m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP 5xx 错误率过高"
+          description: "5xx 错误率超过 5%，当前值: {{ $value }}"
+
+      # 高延迟告警
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, 
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 响应延迟过高"
+          description: "P99 延迟超过 5 秒，当前值: {{ $value }}s"
+
+      # JVM 内存使用告警
+      - alert: HighJvmMemory
+        expr: |
+          jvm_memory_used_bytes{area="heap"}
+          /
+          jvm_memory_max_bytes{area="heap"}
+          > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM 堆内存使用率过高"
+          description: "堆内存使用率超过 80%，当前值: {{ $value | humanizePercentage }}"
+
+      # 判题服务异常
+      - alert: JudgeServiceError
+        expr: |
+          increase(scratch_judge_submit_total{status="error"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "判题服务错误过多"
+          description: "5 分钟内判题错误超过 10 次"
+
+      # 判题延迟过高
+      - alert: JudgeHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(scratch_judge_duration_seconds_bucket[5m])) by (le)
+          ) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "判题延迟过高"
+          description: "P95 判题延迟超过 30 秒"

@@ -1,0 +1,119 @@
+# Promtail 日志收集代理配置
+# 文档: https://grafana.com/docs/loki/latest/clients/promtail/
+# 收集 Docker 容器日志并推送到 Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    # 批量发送配置
+    batchwait: 1s
+    batchsize: 1048576    # 1MB
+    timeout: 10s
+    # 重试配置
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+    # 外部标签
+    external_labels:
+      cluster: scratch-prod
+      environment: production
+
+scrape_configs:
+  # ========== Docker 容器日志 ==========
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker
+          __path__: /var/lib/docker/containers/*/*-json.log
+
+    pipeline_stages:
+      # 解析 Docker JSON 日志格式
+      - docker: {}
+
+      # 为不同容器添加服务标签
+      - regex:
+          expression: '/var/lib/docker/containers/(?P<container_id>[^/]+)/.*'
+          source: filename
+
+      # 根据容器名设置标签
+      - labels:
+          container_id:
+
+      # 后端日志：提取日志级别
+      - match:
+          selector: '{job="docker"} |~ "scratch-backend"'
+          stages:
+            - regex:
+                expression: '(?P<level>INFO|WARN|ERROR|DEBUG|TRACE)\s+'
+            - labels:
+                level:
+
+      # 后端日志：提取请求路径（Spring MVC 日志）
+      - match:
+          selector: '{job="docker"} |~ "scratch-backend"'
+          stages:
+            - regex:
+                expression: '(?P<method>GET|POST|PUT|DELETE|PATCH)\s+(?P<path>/[^\s]+)'
+            - labels:
+                method:
+                path:
+
+      # 前端 Nginx 日志：提取状态码
+      - match:
+          selector: '{job="docker"} |~ "scratch-frontend"'
+          stages:
+            - regex:
+                expression: '"(?P<method>\w+)\s+(?P<path>[^\s]+)\s+HTTP/[^"]+"\s+(?P<status>\d+)'
+            - labels:
+                status:
+
+      # 丢弃健康检查日志（减少噪音）
+      - match:
+          selector: '{job="docker"} |~ "/api/health"'
+          stages:
+            - drop:
+                expression: '.*'
+
+  # ========== 应用日志目录（可选） ==========
+  - job_name: app-logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: app
+          __path__: /var/log/scratch/*.log
+
+    pipeline_stages:
+      # 解析 Spring Boot 日志格式
+      # 2024-04-28 10:15:30.123 INFO [thread-name] c.s.c.Service - message
+      - regex:
+          expression: '(?P<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?P<level>INFO|WARN|ERROR|DEBUG|TRACE)\s+\[(?P<thread>[^\]]+)\]\s+(?P<class>[^\s]+)\s+-\s+(?P<message>.*)'
+      - labels:
+          level:
+          class:
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02 15:04:05.000'
+
+      # 丢弃 DEBUG 日志（生产环境不需要）
+      - match:
+          selector: '{level="DEBUG"}'
+          stages:
+            - drop:
+                expression: '.*'
+
+# 标签配置
+# 限制高基数标签，避免性能问题
+limits_config:
+  max_label_name_length: 256
+  max_label_value_length: 2048
+  max_label_names_per_series: 30

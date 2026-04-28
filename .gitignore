@@ -1,0 +1,42 @@
+# Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker volumes
+mysql_data/
+redis_data/
+minio_data/
+prometheus_data/
+grafana_data/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+e2e-results/
+
+# Secrets
+.env
+application-local.yml

@@ -1,0 +1,15 @@
+// API 模块统一导出
+// 按模块拆分的 API 文件，便于维护和类型检查
+export { default as api, get, post, put, del, getAbortController, clearAbortController, cancelAllRequests } from './request'
+export { userApi } from './user'
+export { notificationApi } from './notification'
+export { projectApi } from './project'
+export { socialApi } from './social'
+export { statsApi } from './stats'
+export { problemApi } from './problem'
+export { homeworkApi } from './homework'
+export { pointApi } from './point'
+export { competitionApi } from './competition'
+export { aiReviewApi } from './ai-review'
+export { adminApi } from './admin'
+export { analyticsApi } from './analytics'

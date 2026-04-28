@@ -1,0 +1,29 @@
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY scratch-common-core/pom.xml scratch-common-core/
+COPY scratch-common-redis/pom.xml scratch-common-redis/
+COPY scratch-common-security/pom.xml scratch-common-security/
+COPY scratch-common-audit/pom.xml scratch-common-audit/
+COPY scratch-sb3/pom.xml scratch-sb3/
+COPY scratch-judge-core/pom.xml scratch-judge-core/
+COPY scratch-user/pom.xml scratch-user/
+COPY scratch-editor/pom.xml scratch-editor/
+COPY scratch-social/pom.xml scratch-social/
+COPY scratch-judge/pom.xml scratch-judge/
+COPY scratch-classroom/pom.xml scratch-classroom/
+COPY scratch-system/pom.xml scratch-system/
+COPY scratch-app/pom.xml scratch-app/
+RUN mvn dependency:go-offline -B
+COPY . .
+RUN mvn package -DskipTests -B
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+# 安装 curl 用于健康检查
+RUN apk add --no-cache curl
+
+COPY --from=build /app/scratch-app/target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
