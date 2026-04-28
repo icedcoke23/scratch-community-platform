@@ -83,7 +83,7 @@ docs: 更新 PROGRESS.md Sprint 14 进度
 
 ```bash
 # 1. 基础设施
-cd docker && docker-compose up -d mysql redis minio
+cd docker/compose && docker-compose up -d mysql redis minio
 
 # 2. 后端
 cd backend && mvn spring-boot:run -pl scratch-app

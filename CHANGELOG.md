@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## v3.5.2 (2026-04-28) — 深度目录重组
+
+### 📁 目录重构
+
+- **docker/ 子目录拆分**: compose/ monitoring/ nginx/ 三个子目录，告别 12 文件平铺
+  - `docker/compose/` — docker-compose.yml + docker-compose.prod.yml
+  - `docker/monitoring/` — prometheus.yml + alert_rules.yml + grafana/ + loki + promtail
+  - `docker/nginx/` — nginx.conf + nginx.prod.conf
+- **文档合并**: DEPLOYMENT.md 更新到 v3.0，添加到 PRODUCTION_DEPLOYMENT.md 的交叉引用
+- **过时文档归档**: DEEP_OPTIMIZATION_REPORT.md (v0.22.0) 移入 archive/legacy/
+- **子目录 README**: docker/ + mobile/ + scripts/ 各添加 README.md 说明
+
+### 🔧 路径修复
+
+- docker-compose.yml / docker-compose.prod.yml: 更新 init.sql/nginx/Dockerfile 相对路径
+- .github/workflows/deploy.yml: 更新 compose 路径
+- README.md / CONTRIBUTING.md / DEPLOYMENT.md / PRODUCTION_DEPLOYMENT.md: 同步更新
+
+---
+
 ## v3.5.1 (2026-04-28) — 文档整理与归档优化
 
 ### 📚 文档整理

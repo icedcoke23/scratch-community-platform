@@ -100,7 +100,7 @@
 ### 1. 启动基础设施
 
 ```bash
-cd docker
+cd docker/compose
 docker-compose up -d mysql redis minio
 ```
 
@@ -144,7 +144,7 @@ open http://localhost:8080/swagger-ui.html
 cp .env.example .env
 # 修改 JWT_SECRET 等敏感配置
 
-cd docker
+cd docker/compose
 docker-compose up -d
 # 前端：http://localhost:3000
 # 后端 API：http://localhost:8080
@@ -204,7 +204,6 @@ scratch-community-platform/
 | [📊 ER 图](docs/ER_DIAGRAM.md) | 21 张表的完整实体关系图（Mermaid） |
 | [📐 架构决策记录](docs/ADR.md) | 6 个关键架构决策的上下文与权衡 |
 | [📊 综合分析报告](docs/COMPREHENSIVE_ANALYSIS.md) | 架构 / CI / 代码 / 安全 / 数据库 / API 全面分析 |
-| [🔧 深度优化报告](docs/DEEP_OPTIMIZATION_REPORT.md) | 限流器 / DFA / 读写分离 / 数据库迁移 |
 | [📁 归档文档](docs/archive/) | 历次审计报告 + 前期设计文档 |
 
 ---

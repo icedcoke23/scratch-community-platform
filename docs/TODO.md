@@ -64,5 +64,6 @@
 | TypeScript | ✅ 0 错误 | vue-tsc 类型检查通过 |
 | 前端构建 | ✅ 通过 | Vite 8 + Rolldown |
 | CI/CD | ✅ 全部通过 | Backend + Frontend + Sandbox + Docker + Lint |
-| 踩坑记录 | 📝 96 条 | 121 条经验总结 |
-| Flyway 迁移 | 📦 18 个 | V1-V18 版本化迁移 |
+| 踩坑记录 | 📝 104 条 | 129 条经验总结 |
+| Flyway 迁移 | 📦 19 个 | V1-V19 版本化迁移 |
+| 文档版本 | v3.5.0 | 2026-04-28 |

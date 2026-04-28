@@ -131,7 +131,7 @@ FRONTEND_PORT=3000
 
 ### 3.3 配置 Nginx (HTTPS)
 
-创建 `docker/nginx-prod.conf`：
+创建 `docker/nginx/nginx-prod.conf`：
 
 ```nginx
 upstream backend {
@@ -239,13 +239,13 @@ server {
 
 ```bash
 # 构建并启动所有服务
-docker-compose -f docker/docker-compose.yml up -d --build
+docker-compose -f docker/compose/docker-compose.yml up -d --build
 
 # 查看服务状态
-docker-compose -f docker/docker-compose.yml ps
+docker-compose -f docker/compose/docker-compose.yml ps
 
 # 查看日志
-docker-compose -f docker/docker-compose.yml logs -f
+docker-compose -f docker/compose/docker-compose.yml logs -f
 ```
 
 ### 3.5 初始化数据库
@@ -297,7 +297,7 @@ command: >
 
 ### 5.1 Prometheus 配置
 
-创建 `docker/prometheus.yml`：
+创建 `docker/monitoring/prometheus.yml`：
 
 ```yaml
 global:

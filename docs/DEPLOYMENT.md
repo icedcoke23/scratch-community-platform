@@ -1,7 +1,9 @@
 # 🚢 部署指南
 
-> 版本：v2.0 | 日期：2026-04-25
-> 生产环境部署说明
+> 版本：v3.0 | 日期：2026-04-28
+> 开发环境 + 生产环境部署说明
+
+> 📌 生产环境详细配置请参考 [生产部署指南](PRODUCTION_DEPLOYMENT.md)
 
 ---
 
@@ -26,7 +28,7 @@ git clone https://github.com/icedcoke23/scratch-community-platform.git
 cd scratch-community-platform
 
 # 启动所有服务
-cd docker
+cd docker/compose
 docker-compose up -d
 
 # 查看状态
@@ -63,7 +65,7 @@ vim .env
 
 ### 3.2 Docker Compose 生产配置
 
-创建 `docker/docker-compose.prod.yml`：
+创建 `docker/compose/docker-compose.prod.yml`：
 
 ```yaml
 services:
@@ -223,7 +225,7 @@ server {
 ### 3.4 启动
 
 ```bash
-cd docker
+cd docker/compose
 
 # 使用生产配置启动
 docker-compose -f docker-compose.prod.yml --env-file ../.env up -d

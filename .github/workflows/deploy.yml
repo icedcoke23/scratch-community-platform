@@ -249,11 +249,11 @@ jobs:
             # 滚动更新服务
             echo "🔄 滚动更新..."
             cd docker
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
+            docker-compose -f docker/compose/docker-compose.prod.yml up -d --no-deps --force-recreate backend
             sleep 10
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate frontend
+            docker-compose -f docker/compose/docker-compose.prod.yml up -d --no-deps --force-recreate frontend
             sleep 5
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate sandbox
+            docker-compose -f docker/compose/docker-compose.prod.yml up -d --no-deps --force-recreate sandbox
 
             # 健康检查
             echo "🏥 健康检查..."
@@ -271,7 +271,7 @@ jobs:
 
             if [ $RETRY -eq $MAX_RETRIES ]; then
               echo "❌ 后端健康检查失败，执行回滚..."
-              docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
+              docker-compose -f docker/compose/docker-compose.prod.yml up -d --no-deps --force-recreate backend
               exit 1
             fi
 
@@ -284,7 +284,7 @@ jobs:
 
             echo "✅ 部署完成 v${{ needs.version.outputs.version }}"
             echo "📊 服务状态:"
-            docker-compose -f docker-compose.prod.yml ps
+            docker-compose -f docker/compose/docker-compose.prod.yml ps
 
       - name: Deployment notification
         if: success()
@@ -312,7 +312,7 @@ jobs:
               export BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:$PREV_VERSION"
               export FRONTEND_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:$PREV_VERSION"
               export SANDBOX_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-sandbox:$PREV_VERSION"
-              docker-compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend frontend sandbox
+              docker-compose -f docker/compose/docker-compose.prod.yml up -d --no-deps --force-recreate backend frontend sandbox
               echo "✅ 回滚完成"
             else
               echo "❌ 无法回滚：未找到上一版本"
