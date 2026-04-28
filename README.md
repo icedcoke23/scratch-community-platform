@@ -19,9 +19,10 @@
 | 🏆 **竞赛系统** | 竞赛创建/报名/答题/排名、自动状态流转 | ✅ |
 | 🎯 **判题系统** | 选择题/判断题/Scratch 编程题、异步判题、AC/WA/TLE/RE | ✅ |
 | 💰 **积分体系** | 5 种积分规则、等级系统、签到、排行榜 | ✅ |
-| 👥 **社区互动** | 发布/浏览、点赞/评论、最新/最热 Feed、排行榜 | ✅ |
+| 👥 **社区互动** | 发布/浏览、点赞/评论、最新/最热 Feed（时间衰减排序）、排行榜 | ✅ |
 | 🔧 **系统管理** | 内容审核（敏感词）、用户管理、通知系统、配置管理 | ✅ |
 | 📱 **移动端** | 响应式适配（768px/480px 断点）、底部 Tab 导航 | ✅ |
+| 🔒 **安全架构** | JWT 双令牌、@RateLimit 自定义限流、路径遍历防护、幂等性 | ✅ |
 
 ---
 
@@ -189,7 +190,7 @@ scratch-community-platform/
 
 | 文档 | 说明 |
 |------|------|
-| [🕳️ 踩坑记录](docs/PITFALLS.md) | **87 条坑 + 112 条经验总结** — 必读 |
+| [🕳️ 踩坑记录](docs/PITFALLS.md) | **104 条坑 + 129 条经验总结** — 必读 |
 | [📋 开发计划](docs/DEV_PLAN.md) | Phase 规划 + Sprint 任务 + 里程碑 |
 | [📐 编码规范](docs/CODING_STANDARDS.md) | Java / TypeScript / 数据库 / API / Git / 安全规范 |
 | [🧩 模块开发指南](docs/MODULE_DEV_GUIDE.md) | 从 0 到 1 的标准开发流程 |
@@ -254,11 +255,23 @@ v3.2.1  ✅ CI 修复 + init.sql 同步 — Dockerfile模块引用/init.sql V8-V
 v3.3.0  ✅ 二次优化 — Role枚举/Redis限流修复/AI缓存/WebSocket重连/日志统一
 ```
 
-### 📋 未来: Phase 11-12
+### ✅ Phase 11: 全面架构优化 (v3.4.0)
 
 ```
-Phase 11  📋 功能扩展        — Testcontainers/限流升级/推荐算法/协作文档
-Phase 12  📋 规模化          — 微服务/读写分离/CDN/消息队列/日志聚合
+v3.4.0  ✅ 架构优化 — V19索引/Token竞态修复/路径遍历防护/SseToken清理/路由组件化/RateLimit注解
+```
+
+### ✅ Phase 12: 深度优化 (v3.5.0)
+
+```
+v3.5.0  ✅ 深度优化 — Feed时间衰减/Caffeine缓存/ErrorBoundary增强/类型安全/Token计算简化
+```
+
+### 📋 未来: Phase 13-14
+
+```
+Phase 13  📋 测试加固        — ProjectService/FeedService/CollabService 测试覆盖
+Phase 14  📋 体验优化        — 组件拆分/i18n字典外置/PWA完善/通知归档
 ```
 
 详细计划请查看 [docs/DEV_PLAN.md](docs/DEV_PLAN.md)
@@ -315,8 +328,10 @@ bash scripts/api-test.sh
 | 报告 | 说明 |
 |------|------|
 | [综合分析报告](docs/COMPREHENSIVE_ANALYSIS.md) | 全栈深度分析：架构 / CI / 安全 / 数据库 / API / 沙箱 |
-| [深度优化报告](docs/DEEP_OPTIMIZATION_REPORT.md) | 限流器内存泄漏 / DFA 类型安全 / 读写分离 |
-| [踩坑记录](docs/PITFALLS.md) | 87 条坑 + 112 条经验总结 |
+| [全面优化报告](docs/FULL_OPTIMIZATION_REPORT.md) | v3.4.0 优化分析：后端/前端/数据库/安全/测试 |
+| [二次审计报告](docs/SECOND_OPTIMIZATION_AUDIT.md) | v3.4.0 优化后审计：修改清单 + 风险评估 |
+| [踩坑记录](docs/PITFALLS.md) | **104 条坑 + 129 条经验总结** — 必读 |
+| [审计历史总结](docs/archive/audits/README.md) | 6 轮审计的关键发现和改进历程 |
 
 ---
 

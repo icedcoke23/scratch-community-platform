@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## v3.5.1 (2026-04-28) — 文档整理与归档优化
+
+### 📚 文档整理
+
+- **归档目录重构**: 消除 `docs/archive/planning/archive/` 三层嵌套，合并到 `docs/archive/planning/`
+- **审计报告归档**: 28 份审计报告移入 `reports/` 子目录，新增 `README.md` 总结 6 轮审计历程
+- **过时文件清理**: `sprint6_tables.sql` 移入 `archive/legacy/`
+- **版本信息统一**: TODO.md / PROGRESS.md / INDEX.md 统一更新到 v3.5.0
+- **README.md 更新**: 核心功能表新增安全架构、质量报告表扩充、开发路线更新
+- **docs/INDEX.md 重写**: 新增优化报告索引、归档目录说明、维护规则
+
+---
+
 ## v3.5.0 (2026-04-28) — 深度架构优化 + 性能增强
 
 ### ⚡ 性能优化
