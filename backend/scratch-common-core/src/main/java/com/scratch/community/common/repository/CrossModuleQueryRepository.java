@@ -460,24 +460,22 @@ public class CrossModuleQueryRepository {
     // ==================== 积分排行榜 ====================
 
     /**
-     * 获取积分排行榜（JOIN 替代关联子查询，单次聚合）
+     * 获取积分排行榜（直接使用 user.points 冗余字段，避免 JOIN point_log）
+     *
+     * <p>user.points 通过 PointEventListener 异步维护，CountCalibrationScheduler 定期校准。
      */
     public List<Map<String, Object>> getPointRanking(int topN) {
         return jdbcTemplate.query(
-                "SELECT u.id, u.username, u.nickname, u.avatar_url, " +
-                "COALESCE(SUM(pl.points), 0) AS total_points " +
-                "FROM user u " +
-                "LEFT JOIN point_log pl ON u.id = pl.user_id " +
-                "WHERE u.deleted = 0 AND u.status = 1 " +
-                "GROUP BY u.id, u.username, u.nickname, u.avatar_url " +
-                "ORDER BY total_points DESC LIMIT ?",
+                "SELECT id, username, nickname, avatar_url, points " +
+                "FROM user WHERE deleted = 0 AND status = 1 " +
+                "ORDER BY points DESC LIMIT ?",
                 (rs, rowNum) -> {
                     Map<String, Object> row = new LinkedHashMap<>();
                     row.put("id", rs.getLong("id"));
                     row.put("username", rs.getString("username"));
                     row.put("nickname", rs.getString("nickname"));
                     row.put("avatarUrl", rs.getString("avatar_url"));
-                    row.put("points", rs.getInt("total_points"));
+                    row.put("points", rs.getInt("points"));
                     return row;
                 },
                 topN);
