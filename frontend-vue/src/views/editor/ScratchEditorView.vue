@@ -161,7 +161,7 @@ let autoSaveTimer: ReturnType<typeof setInterval> | null = null
 const AUTO_SAVE_INTERVAL = 60000 // 60 秒自动保存一次
 
 // Scratch 编辑器 URL（使用官方 Scratch 在线编辑器嵌入）
-const editorUrl = ref('https://turbowarp.org/editor?autostart=false')
+const editorUrl = ref('https://turbowarp.org/embed?autostart=false')
 const sb3PresignedUrl = ref('')
 
 // 加载 sb3 presigned URL 并更新编辑器地址
@@ -172,13 +172,13 @@ async function loadEditorUrl() {
       const res = await projectApi.getSb3Url(Number(projectId))
       if (res.code === 0 && res.data) {
         sb3PresignedUrl.value = res.data
-        editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(res.data)}&autostart=false`
+        editorUrl.value = `https://turbowarp.org/${projectId}/embed?autostart=false`
       } else {
         // 没有 sb3 文件，打开空白编辑器
-        editorUrl.value = 'https://turbowarp.org/editor?autostart=false'
+        editorUrl.value = 'https://turbowarp.org/embed?autostart=false'
       }
     } catch {
-      editorUrl.value = 'https://turbowarp.org/editor?autostart=false'
+      editorUrl.value = 'https://turbowarp.org/embed?autostart=false'
     }
   }
 }
