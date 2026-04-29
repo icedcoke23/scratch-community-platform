@@ -76,9 +76,20 @@ public class JwtUtils {
                         "请设置环境变量: export JWT_SECRET=$(openssl rand -base64 32)\n" +
                         "或在 application-prod.yml 中配置 scratch.jwt.secret\n");
             }
-            log.warn("⚠️ JWT 密钥使用了默认值或未配置！请设置 scratch.jwt.secret 为随机密钥。" +
-                    "生成方法: openssl rand -base64 32");
-            secret = DEV_DEFAULT_SECRET;
+            // 开发环境：生成随机密钥（比硬编码默认值更安全，每次启动随机）
+            String randomSecret;
+            try {
+                randomSecret = java.util.Base64.getEncoder().encodeToString(
+                        java.security.SecureRandom.getInstanceStrong()
+                                .generateSeed(32));
+            } catch (java.security.NoSuchAlgorithmException e) {
+                // 降级：使用弱随机但总比硬编码默认值好
+                randomSecret = java.util.Base64.getEncoder().encodeToString(
+                        new java.security.SecureRandom().generateSeed(32));
+            }
+            log.warn("⚠️ JWT 密钥使用了不安全的默认值或未配置。已自动生成随机临时密钥（重启后配置将失效）：");
+            log.warn("   生产环境请务必设置 scratch.jwt.secret，例如：export JWT_SECRET={}", randomSecret);
+            secret = randomSecret;
             isDefaultSecret = true;
         } else {
             isDefaultSecret = false;
@@ -94,7 +105,16 @@ public class JwtUtils {
 
         // Refresh Token 密钥校验
         if (refreshSecret == null || refreshSecret.isBlank()) {
-            log.warn("⚠️ JWT Refresh Token 密钥未配置，将使用默认值。请设置 scratch.jwt.refresh-secret");
+            String profile = System.getProperty("spring.profiles.active",
+                    System.getenv().getOrDefault("SPRING_PROFILES_ACTIVE", "dev"));
+            if ("prod".equals(profile) || "production".equals(profile)) {
+                throw new IllegalStateException(
+                        "\n🚨🚨🚨 安全告警 🚨🚨🚨\n" +
+                        "生产环境禁止使用默认 Refresh Token 密钥！\n" +
+                        "请设置环境变量: export JWT_REFRESH_SECRET=$(openssl rand -base64 32)\n" +
+                        "或在 application-prod.yml 中配置 scratch.jwt.refresh-secret\n");
+            }
+            log.warn("⚠️ JWT Refresh Token 密钥未配置，使用开发默认值。生产环境请设置 scratch.jwt.refresh-secret");
             refreshSecret = "scratch-community-refresh-secret-key-at-least-32b";
         }
 
