@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, put } from './request'
 import type { LoginVO, ClassRoom, User, PageResult } from '@/types'
 
 export const userApi = {
@@ -15,5 +15,9 @@ export const userApi = {
   searchUsers: (q: string, page = 1, size = 20) =>
     get<PageResult<User>>('/user/search', { q, page, size }),
   getMyInfo: () =>
-    get<User>('/user/me')
+    get<User>('/user/me'),
+  updateProfile: (data: { nickname?: string; email?: string; bio?: string }) =>
+    put<void>('/user/profile', data),
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    post<void>('/user/change-password', data)
 }

@@ -4,44 +4,54 @@
     <LoadingSkeleton v-if="loading" variant="detail" />
     <template v-else-if="project">
       <!-- 项目信息 -->
-      <div class="page-card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start">
-          <div style="font-size: 20px; font-weight: 700">{{ project.title }}</div>
-          <div
+      <div class="page-card project-info-card">
+        <div class="project-title-row">
+          <h1 class="project-title">{{ project.title }}</h1>
+          <button
             v-if="userStore.isLoggedIn"
             class="like-btn"
             :class="{ liked: isLiked }"
-            style="font-size: 24px; cursor: pointer"
             @click="toggleLike"
           >
-            {{ isLiked ? '❤️' : '🤍' }}
-          </div>
+            <span class="like-icon">{{ isLiked ? '❤️' : '🤍' }}</span>
+            <span class="like-count">{{ project.likeCount || 0 }}</span>
+          </button>
         </div>
-        <div class="card-meta" style="margin: 12px 0">
-          <span class="tag-role">{{ project.username }}</span>
-          <span>👁️ {{ project.viewCount || 0 }}</span>
-          <span>❤️ {{ project.likeCount || 0 }}</span>
-          <span>💬 {{ project.commentCount || 0 }}</span>
-          <span v-if="project.remixCount">🔄 {{ project.remixCount }} Remix</span>
-          <span>{{ timeAgo(project.createdAt) }}</span>
+        <div class="project-meta-bar">
+          <span class="meta-author">
+            <span class="author-badge">{{ (project.username || '?')[0] }}</span>
+            {{ project.username }}
+          </span>
+          <span class="meta-stat"><span class="stat-icon">👁️</span> {{ project.viewCount || 0 }}</span>
+          <span class="meta-stat"><span class="stat-icon">💬</span> {{ project.commentCount || 0 }}</span>
+          <span v-if="project.remixCount" class="meta-stat"><span class="stat-icon">🔄</span> {{ project.remixCount }} Remix</span>
+          <span class="meta-time">{{ timeAgo(project.createdAt) }}</span>
         </div>
-        <div v-if="project.remixProjectId" style="font-size: 12px; color: var(--text2); margin-bottom: 8px">
+        <div v-if="project.remixProjectId" class="remix-source">
           🔄 Remix 自
-          <router-link :to="`/project/${project.remixProjectId}`" style="color: var(--primary)">
+          <router-link :to="`/project/${project.remixProjectId}`" class="remix-link">
             项目 #{{ project.remixProjectId }}
           </router-link>
         </div>
-        <div v-if="project.description" style="font-size: 14px; color: var(--text2); line-height: 1.7; white-space: pre-wrap">
+        <div v-if="project.description" class="project-desc">
           {{ project.description }}
         </div>
-        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
-          <el-button v-if="userStore.isLoggedIn" type="primary" size="small" @click="doRemix">🔄 {{ t('project.remix') }}</el-button>
-          <el-button v-if="project.remixCount" size="small" @click="showRemixes">{{ t('project.remix') }} ({{ project.remixCount }})</el-button>
-          <el-button v-if="userStore.isLoggedIn && userStore.user?.id === project.userId" size="small" type="warning" @click="router.push(`/editor/${project.id}`)">✏️ {{ t('common.edit') }}</el-button>
-          <el-button v-if="userStore.isLoggedIn" size="small" @click="generateAiReview" :loading="aiLoading" :disabled="isStreaming">
-            {{ isStreaming ? '🤖 ...' : '🤖 ' + t('project.aiReview') }}
+        <div class="action-buttons">
+          <el-button v-if="userStore.isLoggedIn" type="primary" size="large" @click="doRemix" class="action-btn remix-action">
+            🔄 {{ t('project.remix') }}
           </el-button>
-          <el-button size="small" @click="showShareDialog = true">📤 {{ t('project.share') }}</el-button>
+          <el-button v-if="project.remixCount" size="large" @click="showRemixes" class="action-btn">
+            🔄 {{ t('project.remix') }} ({{ project.remixCount }})
+          </el-button>
+          <el-button v-if="userStore.isLoggedIn && userStore.user?.id === project.userId" size="large" type="warning" @click="router.push(`/editor/${project.id}`)" class="action-btn">
+            ✏️ {{ t('common.edit') }}
+          </el-button>
+          <el-button v-if="userStore.isLoggedIn" size="large" @click="generateAiReview" :loading="aiLoading" :disabled="isStreaming" class="action-btn ai-action">
+            {{ isStreaming ? '🤖 分析中...' : '🤖 ' + t('project.aiReview') }}
+          </el-button>
+          <el-button size="large" @click="showShareDialog = true" class="action-btn">
+            📤 {{ t('project.share') }}
+          </el-button>
         </div>
       </div>
 
@@ -326,28 +336,188 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.comment-box { border-top: 1px solid var(--border); padding: 14px 0; }
+/* 项目信息卡片 */
+.project-info-card {
+  padding: 24px;
+}
+
+.project-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.project-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.like-btn:hover {
+  transform: scale(1.1);
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+}
+
+.like-btn.liked {
+  border-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.like-icon {
+  font-size: 22px;
+}
+
+.like-count {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.project-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.meta-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.author-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.meta-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 16px;
+}
+
+.meta-time {
+  color: var(--text3);
+}
+
+.remix-source {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--primary-bg);
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.remix-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.remix-link:hover {
+  text-decoration: underline;
+}
+
+.project-desc {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  font-weight: 600;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+.remix-action {
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+  border: none;
+}
+
+.ai-action {
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+  border: none;
+  color: #fff;
+}
+
+/* 评论区 */
+.comment-box { border-top: 1px solid var(--border); padding: 16px 0; }
 .comment-box:first-child { border-top: none; }
 .comment-avatar {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--primary-bg); display: flex; align-items: center;
-  justify-content: center; font-size: 12px; font-weight: 700; color: var(--primary);
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-bg), #F3E8FF);
+  display: flex; align-items: center;
+  justify-content: center; font-size: 14px; font-weight: 700; color: var(--primary);
 }
-.like-btn { transition: .15s; }
-.like-btn:hover { transform: scale(1.1); }
-.like-btn.liked { color: var(--danger); }
+.like-btn { transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* AI 点评流式 */
 .streaming-card {
   border: 2px dashed var(--primary-light);
   background: var(--primary-bg);
+  padding: 20px;
+  border-radius: 16px;
 }
 .streaming-text {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.8;
   white-space: pre-wrap;
   color: var(--text);
 }
 .streaming-dot {
-  width: 8px; height: 8px; border-radius: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
   background: var(--primary);
   animation: pulse-dot 1s ease-in-out infinite;
 }
@@ -357,6 +527,14 @@ onBeforeUnmount(() => {
 }
 .tag-role {
   background: var(--primary-bg); color: var(--primary);
-  font-size: 11px; padding: 2px 8px; border-radius: 4px;
+  font-size: 12px; padding: 3px 10px; border-radius: 8px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .project-title { font-size: 20px; }
+  .project-meta-bar { gap: 10px; }
+  .action-buttons { flex-direction: column; }
+  .action-btn { width: 100%; }
 }
 </style>

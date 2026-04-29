@@ -188,8 +188,21 @@ async function saveProfile() {
   }
   saving.value = true
   try {
-    // 这里应该调用用户更新 API
-    ElMessage.success('保存成功')
+    const res = await userApi.updateProfile({
+      nickname: form.nickname.trim(),
+      email: form.email.trim() || undefined,
+      bio: form.bio.trim() || undefined
+    })
+    if (res.code === 0) {
+      ElMessage.success('✅ 保存成功')
+      // 更新本地 store 中的用户信息
+      if (userStore.user) {
+        userStore.user.nickname = form.nickname.trim()
+        userStore.user.bio = form.bio.trim()
+      }
+    } else {
+      ElMessage.error(res.msg || '保存失败')
+    }
   } catch (e: unknown) {
     ElMessage.error(getErrorMessage(e) || '保存失败')
   } finally {
@@ -220,12 +233,19 @@ async function changePassword() {
   }
   changingPassword.value = true
   try {
-    // 这里应该调用修改密码 API
-    ElMessage.success('密码修改成功')
-    showChangePassword.value = false
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
+    const res = await userApi.changePassword({
+      oldPassword: passwordForm.oldPassword,
+      newPassword: passwordForm.newPassword
+    })
+    if (res.code === 0) {
+      ElMessage.success('✅ 密码修改成功')
+      showChangePassword.value = false
+      passwordForm.oldPassword = ''
+      passwordForm.newPassword = ''
+      passwordForm.confirmPassword = ''
+    } else {
+      ElMessage.error(res.msg || '修改失败')
+    }
   } catch (e: unknown) {
     ElMessage.error(getErrorMessage(e) || '修改失败')
   } finally {
@@ -257,9 +277,12 @@ onMounted(() => {
 
 <style scoped>
 .section-title {
-  font-weight: 600;
-  font-size: 15px;
-  margin-bottom: 16px;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .security-items {
@@ -272,7 +295,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--border);
 }
 
@@ -281,32 +304,32 @@ onMounted(() => {
 }
 
 .security-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text);
 }
 
 .security-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text2);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 @media (max-width: 768px) {
   :deep(.el-form-item__label) {
-    font-size: 13px;
+    font-size: 14px;
   }
   .security-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 10px;
   }
 }
 
 @media (max-width: 480px) {
   :deep(.el-radio-button__inner) {
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
   }
 }
 </style>

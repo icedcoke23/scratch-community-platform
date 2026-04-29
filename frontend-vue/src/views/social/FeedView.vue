@@ -2,19 +2,41 @@
   <div>
     <!-- 平台统计横幅 -->
     <div v-if="stats" class="stats-banner">
-      <span class="stat-item"><strong>{{ stats.totalUsers }}</strong> 位创作者</span>
-      <span class="stat-item"><strong>{{ stats.publishedProjects }}</strong> 个作品</span>
-      <span class="stat-item"><strong>{{ stats.totalProjects }}</strong> 个项目</span>
+      <div class="stat-highlight">
+        <span class="stat-emoji">👦👧</span>
+        <div class="stat-content">
+          <span class="stat-number">{{ stats.totalUsers }}</span>
+          <span class="stat-label">位小创作者</span>
+        </div>
+      </div>
+      <div class="stat-highlight">
+        <span class="stat-emoji">🎨</span>
+        <div class="stat-content">
+          <span class="stat-number">{{ stats.publishedProjects }}</span>
+          <span class="stat-label">个精彩作品</span>
+        </div>
+      </div>
+      <div class="stat-highlight">
+        <span class="stat-emoji">🚀</span>
+        <div class="stat-content">
+          <span class="stat-number">{{ stats.totalProjects }}</span>
+          <span class="stat-label">个项目诞生</span>
+        </div>
+      </div>
     </div>
 
     <div class="feed-header">
-      <h1 class="page-title">{{ t('feed.title') }}</h1>
+      <h1 class="page-title">
+        <span class="title-emoji">🌟</span>
+        {{ t('feed.title') }}
+      </h1>
       <div class="feed-controls">
         <el-input
           v-model="searchQuery"
           :placeholder="t('common.search') + '...'"
           clearable
           class="search-input"
+          size="large"
           @keyup.enter="doSearch"
           @clear="clearSearch"
         >
@@ -22,17 +44,17 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-radio-group v-model="sort" size="small" @change="loadFeed(true)">
-          <el-radio-button value="latest">{{ t('feed.latest') }}</el-radio-button>
-          <el-radio-button value="hot">{{ t('feed.hot') }}</el-radio-button>
+        <el-radio-group v-model="sort" size="large" @change="loadFeed(true)" class="sort-group">
+          <el-radio-button value="latest">🆕 {{ t('feed.latest') }}</el-radio-button>
+          <el-radio-button value="hot">🔥 {{ t('feed.hot') }}</el-radio-button>
         </el-radio-group>
       </div>
     </div>
 
     <!-- 搜索结果提示 -->
     <div v-if="isSearching" class="search-hint">
-      <span>搜索 "{{ lastSearch }}" 的结果（{{ total }} 条）</span>
-      <el-button text type="primary" @click="clearSearch">清除搜索</el-button>
+      <span>🔍 搜索 "{{ lastSearch }}" 的结果（{{ total }} 条）</span>
+      <el-button text type="primary" size="large" @click="clearSearch">清除搜索</el-button>
     </div>
 
     <LoadingSkeleton v-if="loading && projects.length === 0" :count="6" variant="card" />
@@ -48,7 +70,9 @@
     </div>
 
     <div v-if="hasMore" class="load-more">
-      <el-button :loading="loading" @click="loadMore">加载更多</el-button>
+      <el-button size="large" :loading="loading" @click="loadMore" class="load-more-btn">
+        {{ loading ? '加载中...' : '📦 加载更多作品' }}
+      </el-button>
     </div>
   </div>
 </template>
@@ -112,7 +136,6 @@ async function doSearch() {
   page.value = 1
   loading.value = true
 
-  // 取消上一次搜索请求
   const controller = getAbortController('feed-search')
   try {
     const res = await socialApi.search(q, 1, 20)
@@ -121,7 +144,7 @@ async function doSearch() {
       total.value = res.data.total || 0
     }
   } catch (e: unknown) {
-    if (e instanceof Error && e.name === 'CanceledError') return // 请求被取消，忽略
+    if (e instanceof Error && e.name === 'CanceledError') return
   } finally {
     loading.value = false
     clearAbortController('feed-search')
@@ -138,7 +161,6 @@ function clearSearch() {
 function loadMore() {
   page.value++
   if (isSearching.value) {
-    // 搜索翻页
     loading.value = true
     socialApi.search(lastSearch.value, page.value, 20)
       .then(res => {
@@ -176,47 +198,141 @@ onUnmounted(() => {
 .stats-banner {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  padding: 16px 24px;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
+  gap: 24px;
+  padding: 24px 32px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%);
+  border-radius: 20px;
   color: #fff;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  flex-wrap: wrap;
 }
-.stat-item { font-size: 14px; }
-.stat-item strong { font-size: 20px; margin-right: 4px; }
+
+.stat-highlight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s ease;
+}
+
+.stat-highlight:hover {
+  transform: scale(1.05);
+}
+
+.stat-emoji {
+  font-size: 32px;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 13px;
+  opacity: 0.9;
+  font-weight: 500;
+}
 
 .feed-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
-.feed-controls { display: flex; gap: 12px; align-items: center; }
-.search-input { width: 220px; }
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-emoji {
+  font-size: 28px;
+  animation: title-wave 2s ease-in-out infinite;
+}
+
+@keyframes title-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+.feed-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  width: 260px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.sort-group :deep(.el-radio-button__inner) {
+  border-radius: 10px;
+  font-weight: 600;
+}
 
 .search-hint {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  color: #666;
-  font-size: 14px;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: var(--text2);
+  font-size: 15px;
+  padding: 12px 16px;
+  background: var(--primary-bg);
+  border-radius: 12px;
 }
 
 .project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
-.load-more { text-align: center; padding: 20px; }
+
+.load-more {
+  text-align: center;
+  padding: 28px;
+}
+
+.load-more-btn {
+  min-width: 200px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
 @media (max-width: 768px) {
   .project-grid { grid-template-columns: 1fr; }
   .feed-header { flex-direction: column; align-items: stretch; }
   .feed-controls { flex-direction: column; }
   .search-input { width: 100%; }
-  .stats-banner { flex-wrap: wrap; gap: 16px; }
+  .stats-banner { gap: 12px; padding: 16px; }
+  .stat-emoji { font-size: 24px; }
+  .stat-number { font-size: 20px; }
+  .stat-highlight { padding: 6px 12px; }
+}
+
+@media (max-width: 480px) {
+  .stats-banner { flex-direction: column; gap: 8px; }
+  .stat-highlight { justify-content: center; }
 }
 </style>

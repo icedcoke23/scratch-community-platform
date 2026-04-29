@@ -150,30 +150,33 @@ onMounted(async () => {
 <style scoped>
 .profile-header {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   align-items: flex-start;
+  padding: 24px;
 }
 
 .profile-avatar {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple, #A855F7));
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
 .profile-info { flex: 1; min-width: 0; }
 
 .profile-name {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: var(--text);
 }
 
 .profile-meta {
@@ -181,69 +184,90 @@ onMounted(async () => {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text2);
 }
 
 .profile-level {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--primary);
+  background: var(--primary-bg);
+  padding: 3px 10px;
+  border-radius: 10px;
 }
 
 .profile-points {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--warning);
+  background: #FEF3C7;
+  padding: 3px 10px;
+  border-radius: 10px;
 }
 
 .profile-bio {
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 12px;
+  font-size: 15px;
   color: var(--text2);
-  line-height: 1.6;
+  line-height: 1.7;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: 12px;
 }
 
 .profile-stats {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .stat-item {
   flex: 1;
   text-align: center;
-  padding: 16px;
+  padding: 20px;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--primary);
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text2);
   margin-top: 4px;
+  font-weight: 500;
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 .load-more {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
 }
 
 @media (max-width: 768px) {
@@ -251,6 +275,7 @@ onMounted(async () => {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    padding: 20px;
   }
   .profile-meta {
     justify-content: center;
@@ -262,18 +287,18 @@ onMounted(async () => {
 
 @media (max-width: 480px) {
   .profile-avatar {
-    width: 56px;
-    height: 56px;
-    font-size: 22px;
+    width: 64px;
+    height: 64px;
+    font-size: 26px;
   }
   .profile-name {
-    font-size: 18px;
+    font-size: 20px;
   }
   .stat-item {
-    padding: 12px;
+    padding: 14px;
   }
   .stat-value {
-    font-size: 20px;
+    font-size: 22px;
   }
 }
 </style>
