@@ -1,12 +1,15 @@
 <template>
   <div class="search-page">
-    <h1 class="page-title">🔍 {{ t('nav.search') }}</h1>
+    <h1 class="page-title">
+      <span class="title-emoji">🔍</span>
+      {{ t('nav.search') }}
+    </h1>
 
     <!-- 搜索框 -->
     <div class="search-bar">
       <el-input
         v-model="query"
-        :placeholder="t('nav.search') + '...'"
+        placeholder="搜索项目、创作者..."
         size="large"
         clearable
         @keyup.enter="doSearch"
@@ -16,37 +19,34 @@
           <el-icon><Search /></el-icon>
         </template>
         <template #append>
-          <el-button @click="doSearch" :loading="loading">{{ t('common.search') }}</el-button>
+          <el-button @click="doSearch" :loading="loading" size="large">{{ t('common.search') }}</el-button>
         </template>
       </el-input>
     </div>
 
     <!-- 热门搜索 -->
     <div v-if="!results" class="hot-searches">
-      <div class="section-label">{{ t('nav.search') }}</div>
+      <div class="section-label">🔥 热门搜索</div>
       <div class="hot-tags">
-        <el-tag
+        <span
           v-for="tag in hotTags"
           :key="tag"
           class="hot-tag"
           @click="query = tag; doSearch()"
         >
           {{ tag }}
-        </el-tag>
+        </span>
       </div>
     </div>
 
     <!-- 搜索结果 -->
     <template v-if="results">
       <div class="result-info">
-        找到 <strong>{{ total }}</strong> 个相关项目
+        🔍 找到 <strong>{{ total }}</strong> 个相关项目
         <span v-if="query" class="result-query">（关键词：{{ query }}）</span>
       </div>
 
-      <div v-if="results.length === 0" class="empty-state">
-        <div style="font-size: 48px; margin-bottom: 12px">🔍</div>
-        <p>{{ t('common.empty') }}</p>
-      </div>
+      <EmptyState v-if="results.length === 0" icon="🔍" text="没有找到相关项目，换个关键词试试？" />
 
       <div v-else class="result-grid">
         <ProjectCard
@@ -57,7 +57,7 @@
         />
       </div>
 
-      <div v-if="total > 20" style="margin-top: 20px; text-align: center">
+      <div v-if="total > 20" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="page"
           :page-size="20"
@@ -78,6 +78,7 @@ import { Search } from '@element-plus/icons-vue'
 import { socialApi } from '@/api'
 import { useI18n } from '@/composables/useI18n'
 import ProjectCard from '@/components/ProjectCard.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import type { Project } from '@/types'
 
 const { t } = useI18n()
@@ -91,8 +92,8 @@ const total = ref(0)
 const page = ref(1)
 
 const hotTags = [
-  '游戏', '动画', '音乐', '画画', '迷宫',
-  '射击', '冒险', '教育', '数学', '故事'
+  '🎮 游戏', '🎬 动画', '🎵 音乐', '🎨 画画', '🏰 迷宫',
+  '🚀 射击', '⚔️ 冒险', '📖 教育', '🧮 数学', '📚 故事'
 ]
 
 async function doSearch() {
@@ -120,55 +121,83 @@ async function doSearch() {
 
 <style scoped>
 .search-page {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
 }
 
 .search-bar {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+}
+
+.search-bar :deep(.el-input__wrapper) {
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .hot-searches {
   text-align: center;
+  padding: 20px;
+  background: var(--card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
 }
 
 .section-label {
-  font-size: 13px;
-  color: var(--text2, #666);
-  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
 }
 
 .hot-tags {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .hot-tag {
   cursor: pointer;
-  transition: transform 0.15s;
+  padding: 8px 16px;
+  background: var(--primary-bg);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .hot-tag:hover {
+  background: var(--primary);
+  color: #fff;
   transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .result-info {
-  font-size: 14px;
-  color: var(--text2, #666);
-  margin-bottom: 16px;
+  font-size: 15px;
+  color: var(--text2);
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  background: var(--primary-bg);
+  border-radius: 12px;
 }
 
 .result-query {
-  color: var(--text3, #999);
-  font-size: 13px;
+  color: var(--text3);
+  font-size: 14px;
 }
 
 .result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  gap: 16px;
+}
+
+.pagination-wrapper {
+  margin-top: 24px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {

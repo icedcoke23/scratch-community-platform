@@ -16,8 +16,10 @@ export const userApi = {
     get<PageResult<User>>('/user/search', { q, page, size }),
   getMyInfo: () =>
     get<User>('/user/me'),
+  getUserProfile: (userId: number) =>
+    get<User>(`/user/${userId}/profile`),
   updateProfile: (data: { nickname?: string; email?: string; bio?: string }) =>
-    put<void>('/user/profile', data),
+    put<void>('/user/me', data),
   changePassword: (data: { oldPassword: string; newPassword: string }) =>
-    post<void>('/user/change-password', data)
+    put<void>('/user/password', data)
 }

@@ -135,10 +135,9 @@ function loadMore() {
 onMounted(async () => {
   const userId = Number(route.params.id)
   try {
-    // 加载用户信息（通过搜索 API 临时获取）
-    const res = await userApi.searchUsers(String(userId), 1, 1)
-    if (res.code === 0 && res.data?.records?.length) {
-      userProfile.value = res.data.records[0]
+    const res = await userApi.getUserProfile(userId)
+    if (res.code === 0 && res.data) {
+      userProfile.value = res.data
     }
   } catch { /* 忽略 */ }
 

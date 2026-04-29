@@ -1,14 +1,19 @@
 <template>
   <div class="oauth-callback">
-    <div class="callback-loading" v-if="loading">
-      <el-icon class="loading-icon" :size="48"><Loading /></el-icon>
-      <p>正在处理第三方登录...</p>
+    <div class="callback-card" v-if="loading">
+      <div class="loading-spinner">🐱</div>
+      <p class="loading-text">正在处理第三方登录...</p>
+      <div class="loading-dots">
+        <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      </div>
     </div>
 
-    <div class="callback-error" v-else-if="error">
-      <el-icon :size="48" color="#f56c6c"><CircleCloseFilled /></el-icon>
-      <p>{{ error }}</p>
-      <el-button @click="goHome">返回首页</el-button>
+    <div class="callback-card" v-else-if="error">
+      <div class="error-icon">😿</div>
+      <p class="error-text">{{ error }}</p>
+      <el-button type="primary" size="large" @click="goHome" class="home-btn">
+        🏠 返回首页
+      </el-button>
     </div>
   </div>
 </template>
@@ -16,7 +21,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Loading, CircleCloseFilled } from '@element-plus/icons-vue'
 import { oauthLogin } from '@/api/oauth'
 import { useUserStore } from '@/stores/user'
 
@@ -40,10 +44,7 @@ onMounted(async () => {
   try {
     const res = await oauthLogin({ provider, code })
     if (res.data) {
-      // 保存登录状态
       userStore.setAuth(res.data.token, res.data.userInfo)
-
-      // 通知父窗口（如果是弹窗模式）
       if (window.opener) {
         window.opener.postMessage({
           type: 'oauth_callback',
@@ -52,7 +53,6 @@ onMounted(async () => {
         }, window.location.origin)
         window.close()
       } else {
-        // 直接跳转模式
         router.push('/feed')
       }
     }
@@ -74,22 +74,71 @@ function goHome() {
   justify-content: center;
   min-height: 100vh;
   text-align: center;
+  background: var(--bg);
 }
 
-.callback-loading,
-.callback-error {
+.callback-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
+  padding: 48px;
+  background: var(--card);
+  border-radius: 24px;
+  box-shadow: var(--shadow-xl);
+  max-width: 400px;
 }
 
-.loading-icon {
-  animation: spin 1s linear infinite;
+.loading-spinner {
+  font-size: 64px;
+  animation: bounce 1s ease-in-out infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+
+.loading-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dot {
+  font-size: 24px;
+  color: var(--primary);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+
+.error-icon {
+  font-size: 64px;
+}
+
+.error-text {
+  font-size: 16px;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.home-btn {
+  margin-top: 8px;
+  border-radius: 12px;
+  font-weight: 600;
 }
 </style>
