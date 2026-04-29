@@ -1,0 +1,22 @@
+[Unit]
+Description=Scratch Community Backend
+Documentation=https://github.com/icedcoke23/scratch-community-platform
+After=network.target mysql.service redis.service
+Wants=mysql.service redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/scratch-community-platform/backend/scratch-app
+EnvironmentFile=/etc/profile.d/scratch.sh
+ExecStart=/usr/bin/java -jar /root/scratch-community-platform/backend/scratch-app/target/scratch-app-0.1.0-SNAPSHOT.jar --spring.profiles.active=dev
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# JVM 调优（1.8GB RAM 服务器）
+Environment="JAVA_OPTS=-Xmx512m -Xms256m"
+
+[Install]
+WantedBy=multi-user.target
