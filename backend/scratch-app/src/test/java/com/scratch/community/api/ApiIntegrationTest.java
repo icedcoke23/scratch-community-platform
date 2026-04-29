@@ -4,13 +4,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.lang.annotation.*;
 
 /**
  * API 集成测试注解
- * 使用 H2 内存数据库 + Mock Redis（无需真实 Redis/MySQL）
+ * 使用真实 MySQL（通过 Flyway 迁移初始化）+ Mock Redis
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -18,6 +17,5 @@ import java.lang.annotation.*;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestRedisMockConfig.class)
-@Sql(scripts = "/schema-h2.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 public @interface ApiIntegrationTest {
 }

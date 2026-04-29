@@ -12,7 +12,7 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ../init.sql:/docker-entrypoint-initdb.../init.sql
+      - ../../init.sql:/docker-entrypoint-initdb.../../init.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     networks:
       - scratch-internal
@@ -80,7 +80,7 @@ services:
   # ========== 应用 ==========
   backend:
     build:
-      context: ../backend
+      context: ../../backend
       dockerfile: ../Dockerfile.backend
     container_name: scratch-backend
     ports:
@@ -122,7 +122,7 @@ services:
 
   sandbox:
     build:
-      context: ../sandbox
+      context: ../../sandbox
       dockerfile: Dockerfile
     container_name: scratch-sandbox
     ports:
@@ -155,13 +155,13 @@ services:
   # ========== 前端 (Vue 3 多阶段构建) ==========
   frontend:
     build:
-      context: ../frontend-vue
+      context: ../../frontend-vue
       dockerfile: ../Dockerfile.frontend
     container_name: scratch-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     volumes:
-      - ../nginx/nginx.conf:/et../nginx/nginx.conf.d/default.conf:ro
+      - ../../nginx/nginx.conf:/et../../nginx/nginx.conf.d/default.conf:ro
     depends_on:
       - backend
     networks:

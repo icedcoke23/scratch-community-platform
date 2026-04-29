@@ -8,15 +8,13 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  * 测试环境 Redis Mock 配置
  * <p>
- * 集成测试不需要真实 Redis，通过 MockBean 替代：
- * - StringRedisTemplate: 替代 Spring Boot 自动配置的 Redis 模板
- * - RedissonClient: 替代分布式锁客户端
- * - RedisConnectionFactory: 阻止 Spring Boot 尝试连接 Redis
+ * 集成测试使用真实 MySQL，但 Redis 使用 mock（避免依赖真实 Redis 实例）。
+ * 为 key-value 操作提供默认返回值，防止 NPE。
  */
 @TestConfiguration
 public class TestRedisMockConfig {
@@ -30,15 +28,16 @@ public class TestRedisMockConfig {
     @Bean
     @Primary
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
-        // 使用 Mockito mock，所有 Redis 操作返回 null/默认值
-        // 这样 TokenBlacklistService、SseTokenService、IdempotentInterceptor 等不会 NPE
-        return mock(StringRedisTemplate.class);
+        // 使用 RETURNS_SMART_NULLS 自动为方法调用返回智能 null（避免 NPE）
+        StringRedisTemplate mock = mock(StringRedisTemplate.class, RETURNS_SMART_NULLS);
+        // 黑名单检查默认返回 false（Token 未被加入黑名单）
+        when(mock.hasKey(anyString())).thenReturn(false);
+        return mock;
     }
 
     @Bean
     @Primary
     public RedissonClient redissonClient() {
-        // Mock RedissonClient，PointService 会降级为数据库原子 SQL
         return mock(RedissonClient.class);
     }
 }

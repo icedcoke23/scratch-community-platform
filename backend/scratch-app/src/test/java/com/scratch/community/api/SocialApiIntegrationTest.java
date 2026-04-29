@@ -48,7 +48,7 @@ class SocialApiIntegrationTest {
                 .andReturn();
 
         String username = objectMapper.readTree(regResult.getResponse().getContentAsString())
-                .get("data").get("username").asText();
+                .get("data").get("userInfo").get("username").asText();
 
         String loginJson = """
                 {

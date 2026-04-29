@@ -49,7 +49,7 @@ class UserApiIntegrationTest {
 
         // 登录获取 Token
         String username = objectMapper.readTree(registerResult.getResponse().getContentAsString())
-                .get("data").get("username").asText();
+                .get("data").get("userInfo").get("username").asText();
 
         String loginJson = """
                 {
@@ -91,8 +91,8 @@ class UserApiIntegrationTest {
                             .content(json))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
-                    .andExpect(jsonPath("$.data.username").isNotEmpty())
-                    .andExpect(jsonPath("$.data.nickname").value("新用户"));
+                    .andExpect(jsonPath("$.data.userInfo.username").isNotEmpty())
+                    .andExpect(jsonPath("$.data.userInfo.nickname").value("新用户"));
         }
 
         @Test
@@ -161,7 +161,7 @@ class UserApiIntegrationTest {
                     .andReturn();
 
             String username = objectMapper.readTree(regResult.getResponse().getContentAsString())
-                    .get("data").get("username").asText();
+                    .get("data").get("userInfo").get("username").asText();
 
             String loginJson = """
                     {
