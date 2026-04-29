@@ -84,24 +84,30 @@ public class RateLimitConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/**")
                 .order(1); // 最高优先级
 
-        // 登录接口限流
+        // 登录接口限流（覆盖新旧两套路径）
         registry.addInterceptor(new RateLimitInterceptor(loginLimiter))
-                .addPathPatterns("/api/user/login", "/api/user/register")
+                .addPathPatterns(
+                        "/api/user/login", "/api/user/register",
+                        "/api/v1/user/login", "/api/v1/user/register"
+                )
                 .order(2);
 
-        // 判题接口限流
+        // 判题接口限流（覆盖新旧两套路径）
         registry.addInterceptor(new RateLimitInterceptor(judgeLimiter))
-                .addPathPatterns("/api/judge/**")
+                .addPathPatterns("/api/judge/**", "/api/v1/judge/**")
                 .order(2);
 
         // AI 流式点评限流（更严格，防止 GPU 资源滥用）
         registry.addInterceptor(new RateLimitInterceptor(aiStreamLimiter))
-                .addPathPatterns("/api/ai-review/project/*/stream")
+                .addPathPatterns(
+                        "/api/ai-review/project/*/stream",
+                        "/api/v1/ai-review/project/*/stream"
+                )
                 .order(2);
 
         // AI 点评限流
         registry.addInterceptor(new RateLimitInterceptor(aiReviewLimiter))
-                .addPathPatterns("/api/ai-review/**")
+                .addPathPatterns("/api/ai-review/**", "/api/v1/ai-review/**")
                 .order(3);
     }
 
