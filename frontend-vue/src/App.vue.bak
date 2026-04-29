@@ -2,6 +2,8 @@
   <el-config-provider :locale="zhCn">
     <!-- 路由加载进度条（Vue 组件化，替代原 DOM 操作方案） -->
     <RouteLoadingBar />
+    <!-- Vercel Web Analytics -->
+    <Analytics />
     <div class="app-layout">
       <!-- 顶部导航 -->
       <AppHeader
@@ -64,6 +66,7 @@ import RouteLoadingBar from '@/components/RouteLoadingBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n } from '@/composables/useI18n'
 import { useNavigation } from '@/composables/useNavigation'
+import { Analytics } from '@vercel/analytics/vue'
 
 // 需要缓存的页面组件名称（keep-alive，从路由 meta.keepAlive 动态获取）
 const cachedViews = computed(() => {
