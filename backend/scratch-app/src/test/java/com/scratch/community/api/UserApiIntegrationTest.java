@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.*;
  */
 @ApiIntegrationTest
 @DisplayName("用户 API 集成测试")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UserApiIntegrationTest {
 
     @Autowired
@@ -245,6 +246,51 @@ class UserApiIntegrationTest {
     @DisplayName("登出与刷新")
     class LogoutRefreshTests {
 
+        private String authToken;
+        private String refreshToken;
+
+        @BeforeEach
+        void setUp() throws Exception {
+            // 独立注册并登录，获取 tokens
+            String username = "logout_refresh_%d".formatted(System.nanoTime());
+            String regJson = """
+                    {
+                        "username": "%s",
+                        "password": "Test@1234",
+                        "nickname": "登出刷新测试",
+                        "role": "STUDENT"
+                    }
+                    """.formatted(username);
+
+            MvcResult regResult = mockMvc.perform(post("/api/v1/user/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(regJson))
+                    .andExpect(status().isOk())
+                    .andReturn();
+
+            String loginUsername = objectMapper.readTree(regResult.getResponse().getContentAsString())
+                    .get("data").get("userInfo").get("username").asText();
+
+            String loginJson = """
+                    {
+                        "username": "%s",
+                        "password": "Test@1234"
+                    }
+                    """.formatted(loginUsername);
+
+            MvcResult loginResult = mockMvc.perform(post("/api/v1/user/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginJson))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(0))
+                    .andReturn();
+
+            // 提取 token 和 refreshToken
+            var jsonNode = objectMapper.readTree(loginResult.getResponse().getContentAsString());
+            authToken = jsonNode.get("data").get("token").asText();
+            refreshToken = jsonNode.get("data").get("refreshToken").asText();
+        }
+
         @Test
         @DisplayName("登出 → Token 失效")
         void logout_invalidatesToken() throws Exception {
@@ -262,8 +308,12 @@ class UserApiIntegrationTest {
         @Test
         @DisplayName("刷新 Token → 返回新 Token")
         void refresh_returnsNewToken() throws Exception {
+            // 使用 refreshToken 在请求体中（不是 Authorization header）
+            String refreshBody = "{\"refreshToken\":\"%s\"}".formatted(refreshToken);
+
             MvcResult result = mockMvc.perform(post("/api/v1/user/refresh")
-                            .header("Authorization", "Bearer " + authToken))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(refreshBody))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.token").isNotEmpty())
@@ -277,10 +327,12 @@ class UserApiIntegrationTest {
                             .header("Authorization", "Bearer " + newToken))
                     .andExpect(status().isOk());
 
-            // 旧 Token 失效
-            mockMvc.perform(get("/api/v1/user/me")
-                            .header("Authorization", "Bearer " + authToken))
-                    .andExpect(status().isUnauthorized());
+            // 旧 Refresh Token 失效（不能再次刷新）
+            mockMvc.perform(post("/api/v1/user/refresh")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(refreshBody))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(com.scratch.community.common.result.ErrorCode.REFRESH_TOKEN_INVALID.getCode()));
         }
     }
 }

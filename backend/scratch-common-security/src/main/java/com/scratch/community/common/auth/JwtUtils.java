@@ -251,4 +251,26 @@ public class JwtUtils {
         Claims claims = parseToken(token);
         return claims.get("role", String.class);
     }
+
+    /**
+     * 计算 Token 剩余有效期（毫秒）
+     * <p>自动识别 Access Token 和 Refresh Token
+     */
+    public long getRemainingExpiry(String token) {
+        try {
+            Claims claims;
+            // 尝试按 Refresh Token 解析（HS512）
+            try {
+                claims = parseRefreshToken(token);
+            } catch (Exception e) {
+                // 降级按 Access Token 解析（HS256）
+                claims = parseToken(token);
+            }
+            Date exp = claims.getExpiration();
+            long remaining = exp.getTime() - System.currentTimeMillis();
+            return Math.max(remaining, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }

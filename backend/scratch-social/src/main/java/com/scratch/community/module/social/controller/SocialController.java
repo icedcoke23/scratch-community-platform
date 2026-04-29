@@ -43,13 +43,13 @@ public class SocialController {
     @Operation(summary = "点赞项目")
     @Idempotent
     @PostMapping("/project/{id}/like")
-    public R<Void> like(@PathVariable Long id) {
+    public R<Boolean> like(@PathVariable Long id) {
         Long userId = LoginUser.getUserId();
         boolean created = socialService.like(userId, id);
         if (created) {
             rankService.incrementLikeScore(userId, 1);
         }
-        return R.ok();
+        return R.ok(created);
     }
 
     /**
@@ -58,13 +58,13 @@ public class SocialController {
      */
     @Operation(summary = "取消点赞")
     @DeleteMapping("/project/{id}/like")
-    public R<Void> unlike(@PathVariable Long id) {
+    public R<Boolean> unlike(@PathVariable Long id) {
         Long userId = LoginUser.getUserId();
         boolean deleted = socialService.unlike(userId, id);
         if (deleted) {
             rankService.incrementLikeScore(userId, -1);
         }
-        return R.ok();
+        return R.ok(deleted);
     }
 
     /**

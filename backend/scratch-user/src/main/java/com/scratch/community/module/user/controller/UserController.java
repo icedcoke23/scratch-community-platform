@@ -96,6 +96,11 @@ public class UserController {
             return R.fail(com.scratch.community.common.result.ErrorCode.REFRESH_TOKEN_INVALID);
         }
 
+        // 检查 Refresh Token 是否已被撤销（黑名单）
+        if (tokenBlacklistService.isBlacklisted(refreshTokenValue)) {
+            return R.fail(com.scratch.community.common.result.ErrorCode.REFRESH_TOKEN_INVALID);
+        }
+
         try {
             Long userId = jwtUtils.getUserIdFromRefreshToken(refreshTokenValue);
             var user = userService.getUserById(userId);
@@ -113,6 +118,10 @@ public class UserController {
                 user.getRefreshTokenExpiresAt().isBefore(java.time.LocalDateTime.now())) {
                 return R.fail(com.scratch.community.common.result.ErrorCode.REFRESH_TOKEN_EXPIRED);
             }
+
+            // 🔒 将旧 Refresh Token 加入黑名单（一次性使用）
+            long remaining = jwtUtils.getRemainingExpiry(refreshTokenValue);
+            tokenBlacklistService.blacklist(refreshTokenValue, remaining);
 
             // 生成新的 Access Token
             String newAccessToken = jwtUtils.generateToken(userId, user.getUsername(), user.getRole());

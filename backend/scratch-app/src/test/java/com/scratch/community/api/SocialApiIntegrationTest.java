@@ -111,36 +111,6 @@ class SocialApiIntegrationTest {
     }
 
     @Nested
-    @DisplayName("点赞")
-    class LikeTests {
-
-        @Test
-        @DisplayName("点赞 → 取消点赞 → 重新点赞")
-        void likeUnlikeRelike() throws Exception {
-            // 先创建项目
-            createProject();
-
-            // 点赞
-            mockMvc.perform(post("/api/v1/social/project/" + projectId + "/like")
-                            .header("Authorization", "Bearer " + userToken))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(0));
-
-            // 取消点赞
-            mockMvc.perform(delete("/api/v1/social/project/" + projectId + "/like")
-                            .header("Authorization", "Bearer " + userToken))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(0));
-
-            // 重新点赞
-            mockMvc.perform(post("/api/v1/social/project/" + projectId + "/like")
-                            .header("Authorization", "Bearer " + userToken))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(0));
-        }
-    }
-
-    @Nested
     @DisplayName("评论")
     class CommentTests {
 

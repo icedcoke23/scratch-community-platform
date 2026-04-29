@@ -25,14 +25,12 @@ minio:
   secret-key: ${MINIO_ROOT_PASSWORD:MinIO_nSIAM0iZZKY/fk0evOyDYg==}
   bucket-prefix: scratch-test-
 
-# JWT 测试密钥
-jwt:
-  secret: test-secret-key-at-least-32-bytes-long-for-integration-test!!!
-  refresh-secret: test-refresh-secret-key-at-least-32bytes-long!!!
-  expiration: 86400000
-
-# AI 点评（禁用 LLM）
+# JWT 测试密钥（与 JwtUtils 属性名一致：scratch.jwt.secret）
 scratch:
+  jwt:
+    secret: test-secret-key-at-least-32-bytes-long-for-integration-test!!!
+    refresh-secret: test-refresh-secret-key-at-least-32bytes-long!!!
+    expiration: 86400000
   ai:
     enabled: false
 
