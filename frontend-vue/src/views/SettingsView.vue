@@ -1,6 +1,9 @@
 <template>
   <div>
-    <h1 class="page-title">⚙️ 个人设置</h1>
+    <h1 class="page-title">
+      <span class="title-emoji">⚙️</span>
+      个人设置
+    </h1>
 
     <LoadingSkeleton v-if="loading" variant="detail" />
 

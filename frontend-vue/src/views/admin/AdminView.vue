@@ -299,35 +299,35 @@ onMounted(loadDashboard)
 
 <style scoped>
 .dashboard-page {
-  max-width: 960px;
+  max-width: 1024px;
   margin: 0 auto;
 }
 
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
   background: var(--card, #fff);
-  border-radius: var(--radius, 8px);
-  padding: 16px;
+  border-radius: 16px;
+  padding: 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-left: 3px solid var(--accent);
-  transition: transform 0.2s, box-shadow 0.2s;
+  gap: 14px;
+  border-left: 4px solid var(--accent);
+  transition: all 0.2s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 
 .stat-icon {
-  font-size: 28px;
+  font-size: 32px;
   flex-shrink: 0;
 }
 
@@ -337,31 +337,35 @@ onMounted(loadDashboard)
 }
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--text, #1a1a2e);
   line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: var(--text2, #666);
+  font-size: 13px;
+  color: var(--text2, #64748b);
   margin-top: 2px;
-}
-
-.stat-sub {
-  font-size: 11px;
   font-weight: 500;
 }
 
-.text-green { color: #10B981; }
+.stat-sub {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.text-green { color: #22C55E; }
 .text-orange { color: #F59E0B; }
 .text-gray { color: #6B7280; }
 
 .section-title {
-  font-weight: 600;
-  font-size: 15px;
-  margin-bottom: 14px;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ratio-grid {
@@ -373,30 +377,31 @@ onMounted(loadDashboard)
 .ratio-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ratio-header {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .ratio-value {
-  font-weight: 600;
-  color: var(--primary, #4F46E5);
+  font-weight: 700;
+  color: var(--primary, #3B82F6);
 }
 
 .progress-bar {
-  height: 8px;
+  height: 10px;
   background: var(--bg, #f0f0f0);
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 5px;
   transition: width 0.6s ease;
 }
 
@@ -410,24 +415,25 @@ onMounted(loadDashboard)
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   background: var(--bg, #f5f5f5);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: 12px;
   text-decoration: none;
   color: var(--text, #1a1a2e);
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.2s, transform 0.15s;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .nav-item:hover {
-  background: var(--primary, #4F46E5);
+  background: var(--primary, #3B82F6);
   color: #fff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .nav-icon {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .chart-grid {
@@ -441,13 +447,13 @@ onMounted(loadDashboard)
     grid-template-columns: repeat(2, 1fr);
   }
   .stat-card {
-    padding: 12px;
+    padding: 14px;
   }
   .stat-value {
-    font-size: 18px;
+    font-size: 20px;
   }
   .stat-icon {
-    font-size: 22px;
+    font-size: 24px;
   }
   :deep(.el-table) { font-size: 12px; }
   :deep(.el-table .cell) { padding: 6px 4px; }
@@ -461,7 +467,5 @@ onMounted(loadDashboard)
   .quick-nav {
     grid-template-columns: repeat(3, 1fr);
   }
-  :deep(.el-table) { font-size: 11px; }
-  :deep(.el-pagination) { font-size: 12px; }
 }
 </style>

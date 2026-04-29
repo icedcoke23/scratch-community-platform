@@ -1,14 +1,16 @@
 <template>
   <div>
     <h1 class="page-title">
-      🔔 {{ t('notification.title') }}
+      <span class="title-emoji">🔔</span>
+      {{ t('notification.title') }}
       <el-button
         v-if="notificationStore.unreadCount > 0"
         type="primary"
-        size="small"
+        size="default"
         text
         @click="handleMarkAllRead"
         :loading="markAllLoading"
+        class="mark-all-btn"
       >
         {{ t('notification.markAllRead') }}
       </el-button>
@@ -18,36 +20,40 @@
     <EmptyState
       v-else-if="notificationStore.notifications.length === 0"
       icon="🔔"
-      :text="t('notification.empty')"
+      text="暂时没有通知"
     />
 
     <template v-else>
-      <div
-        v-for="n in notificationStore.notifications"
-        :key="n.id"
-        class="notification-item"
-        :class="{ unread: !n.read }"
-        @click="handleClick(n)"
-      >
-        <div class="notification-icon">{{ typeIcon[n.type] || '📌' }}</div>
-        <div class="notification-body">
-          <div class="notification-title">{{ n.title }}</div>
-          <div v-if="n.content" class="notification-content">{{ n.content }}</div>
-          <div class="notification-time">{{ timeAgo(n.createdAt) }}</div>
-        </div>
-        <el-button
-          v-if="!n.read"
-          type="primary"
-          size="small"
-          text
-          @click.stop="handleMarkRead(n.id)"
+      <div class="notification-list">
+        <div
+          v-for="n in notificationStore.notifications"
+          :key="n.id"
+          class="notification-item"
+          :class="{ unread: !n.read }"
+          @click="handleClick(n)"
         >
-          {{ t('notification.markRead') }}
-        </el-button>
+          <div class="notif-icon-wrapper" :class="`type-${n.type?.toLowerCase()}`">
+            <span class="notif-icon">{{ typeIcon[n.type] || '📌' }}</span>
+          </div>
+          <div class="notif-body">
+            <div class="notif-title">{{ n.title }}</div>
+            <div v-if="n.content" class="notif-content">{{ n.content }}</div>
+            <div class="notif-time">{{ timeAgo(n.createdAt) }}</div>
+          </div>
+          <button
+            v-if="!n.read"
+            class="read-btn"
+            @click.stop="handleMarkRead(n.id)"
+          >
+            ✓
+          </button>
+        </div>
       </div>
 
       <div v-if="notificationStore.notifications.length < notificationStore.total" class="load-more">
-        <el-button :loading="notificationStore.loading" @click="loadMore">加载更多</el-button>
+        <el-button size="large" :loading="notificationStore.loading" @click="loadMore">
+          📦 加载更多
+        </el-button>
       </div>
     </template>
   </div>
@@ -83,12 +89,9 @@ const typeIcon: Record<string, string> = {
 }
 
 function handleClick(n: Notification) {
-  // 标记已读
   if (!n.read) {
     notificationStore.markRead(n.id)
   }
-
-  // 根据类型跳转
   if (n.relatedId) {
     switch (n.type) {
       case 'LIKE':
@@ -129,49 +132,76 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.mark-all-btn {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 12px;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .notification-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 8px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
 }
 
 .notification-item:hover {
   background: var(--bg);
   box-shadow: var(--shadow);
+  transform: translateX(4px);
 }
 
 .notification-item.unread {
-  border-left: 3px solid var(--primary);
+  border-color: var(--primary-light);
   background: var(--primary-bg);
+  border-left: 4px solid var(--primary);
 }
 
-.notification-icon {
-  font-size: 20px;
+.notif-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  font-size: 20px;
 }
 
-.notification-body {
+.type-like { background: #FEE2E2; }
+.type-comment { background: #DBEAFE; }
+.type-follow { background: #F3E8FF; }
+.type-homework { background: #DCFCE7; }
+.type-grade { background: #FEF3C7; }
+.type-system { background: #F3F4F6; }
+.type-competition { background: #FFEDD5; }
+.type-remix { background: #E0E7FF; }
+
+.notif-body {
   flex: 1;
   min-width: 0;
 }
 
-.notification-title {
-  font-size: 14px;
+.notif-title {
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 4px;
 }
 
-.notification-content {
-  font-size: 13px;
+.notif-content {
+  font-size: 14px;
   color: var(--text2);
   line-height: 1.5;
   margin-bottom: 4px;
@@ -180,22 +210,42 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.notification-time {
+.notif-time {
   font-size: 12px;
-  color: var(--text2);
+  color: var(--text3);
+}
+
+.read-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.read-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.1);
 }
 
 .load-more {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
 }
 
-@media (max-width: 768px) {
-  .notification-item {
-    padding: 12px;
-  }
-  .notification-title {
-    font-size: 13px;
-  }
+@media (max-width: 480px) {
+  .notification-item { padding: 12px; gap: 10px; }
+  .notif-icon-wrapper { width: 34px; height: 34px; font-size: 18px; }
+  .notif-title { font-size: 14px; }
 }
 </style>
