@@ -32,7 +32,7 @@ public class LoginUser {
 
     public static Long getUserId() {
         LoginUser user = CURRENT.get();
-        return user != null ? user.getUserId() : null;
+        return user != null ? user.userId : null;
     }
 
     public static void remove() {

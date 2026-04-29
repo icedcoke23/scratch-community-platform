@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -204,8 +205,20 @@ class UserApiIntegrationTest {
         @Test
         @DisplayName("获取当前用户信息 → 需要 Token")
         void me_withToken() throws Exception {
+            try {
+                mockMvc.perform(get("/api/v1/user/me")
+                                .header("Authorization", "Bearer " + authToken))
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isOk());
+            } catch (Exception e) {
+                MvcResult result = e.getMessage() != null ? null : null;
+                System.err.println("=== me_withToken FAILED ===");
+                e.printStackTrace();
+                throw e;
+            }
             mockMvc.perform(get("/api/v1/user/me")
                             .header("Authorization", "Bearer " + authToken))
+                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.username").isNotEmpty())

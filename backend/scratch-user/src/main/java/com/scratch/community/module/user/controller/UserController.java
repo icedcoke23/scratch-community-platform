@@ -85,12 +85,11 @@ public class UserController {
 
     @Operation(summary = "刷新 Token")
     @PostMapping("/user/refresh")
-    public R<LoginVO> refresh(jakarta.servlet.http.HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+    public R<LoginVO> refresh(@RequestBody java.util.Map<String, String> body) {
+        String refreshTokenValue = body.get("refreshToken");
+        if (refreshTokenValue == null || refreshTokenValue.trim().isEmpty()) {
             return R.fail(com.scratch.community.common.result.ErrorCode.UNAUTHORIZED);
         }
-        String refreshTokenValue = authHeader.substring(7);
 
         // 验证 Refresh Token
         if (!jwtUtils.validateRefreshToken(refreshTokenValue)) {
