@@ -34,14 +34,14 @@ describe('ProjectCard', () => {
     expect(wrapper.find('.card-desc').text()).toContain('测试项目')
   })
 
-  it('长描述应被截断到 100 字符', () => {
+  it('长描述应被截断到 80 字符', () => {
     const longDescProject = {
       ...mockProject,
       description: 'A'.repeat(150)
     }
     const wrapper = mount(ProjectCard, { props: { project: longDescProject } })
     const desc = wrapper.find('.card-desc').text()
-    expect(desc.length).toBeLessThanOrEqual(103) // 100 + '...'
+    expect(desc.length).toBeLessThanOrEqual(83) // 80 + '...'
     expect(desc).toContain('...')
   })
 
@@ -53,7 +53,7 @@ describe('ProjectCard', () => {
 
   it('渲染点赞/评论/浏览数', () => {
     const wrapper = mount(ProjectCard, { props: { project: mockProject } })
-    const stats = wrapper.find('.meta-stats').text()
+    const stats = wrapper.find('.card-stats').text()
     expect(stats).toContain('5')  // likeCount
     expect(stats).toContain('3')  // commentCount
     expect(stats).toContain('100') // viewCount
@@ -61,7 +61,7 @@ describe('ProjectCard', () => {
 
   it('渲染作者头像首字母', () => {
     const wrapper = mount(ProjectCard, { props: { project: mockProject } })
-    expect(wrapper.find('.avatar-sm').text()).toBe('测')
+    expect(wrapper.find('.author-avatar').text()).toBe('测')
   })
 
   it('渲染标签', () => {
