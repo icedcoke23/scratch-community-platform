@@ -5,8 +5,11 @@ import { ElMessage } from 'element-plus'
 import { addError } from '@/utils/errorHandler'
 import { updateServerTimeOffset } from '@/utils'
 
+// 从环境变量读取 API 基础路径
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' }
 })
@@ -54,8 +57,8 @@ function doRefreshToken(): Promise<string | null> {
     if (!rt) return null
 
     try {
-      const res = await axios.post('/api/v1/user/refresh', null, {
-        headers: { Authorization: `Bearer ${rt}` },
+      // 后端期望：refreshToken 放在请求体
+      const res = await axios.post(`${API_BASE}/user/refresh`, { refreshToken: rt }, {
         timeout: 10000
       })
       const data = res.data
