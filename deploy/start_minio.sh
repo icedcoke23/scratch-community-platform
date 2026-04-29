@@ -1,31 +1,43 @@
 #!/bin/bash
-# 启动 MinIO（清理旧进程 → 创建目录 → 后台运行）
+set -e
 
-PID=$(pgrep -f "minio server" || true)
-if [ -n "$PID" ]; then
-    echo "Killing old MinIO PID: $PID"
-    kill -9 $PID
-    sleep 2
-fi
+# 停止旧进程
+pkill -f "minio server" 2>/dev/null || true
+sleep 1
 
-mkdir -p /data/minio/data
-mkdir -p /data/minio/config
-
-echo "MinIO version:"
-/usr/local/bin/minio --version
-
-echo "Starting MinIO..."
+echo "Starting MinIO server..."
 nohup /usr/local/bin/minio server /data/minio/data --console-address :9001 > /var/log/minio.log 2>&1 &
-sleep 4
+sleep 5
 
-NEW_PID=$(pgrep -f "minio server" || true)
-if [ -n "$NEW_PID" ]; then
-    echo "MinIO started ✓ PID=$NEW_PID"
-    echo "Console: http://localhost:9001"
-    echo "API: http://localhost:9000"
-    echo "Credentials: minioadmin / minioadmin (默认，生产必须修改)"
+# 检查进程
+if pgrep -f "minio server" > /dev/null; then
+    echo "MinIO process: OK"
+    pgrep -af minio | grep -v grep
 else
-    echo "MinIO 启动失败，查看日志:"
+    echo "MinIO failed to start. Log:"
     tail -20 /var/log/minio.log
     exit 1
 fi
+
+# 检查端口
+if ss -tlnp | grep -q ":9000"; then
+    echo "Port 9000: LISTENING"
+else
+    echo "Port 9000: NOT LISTENING (but process may still be starting)"
+fi
+
+if ss -tlnp | grep -q ":9001"; then
+    echo "Port 9001 (console): LISTENING"
+fi
+
+# 健康检查
+echo "Health check:"
+curl -s http://localhost:9000/minio/health/live || echo "Health check failed"
+
+echo ""
+echo "MinIO credentials (default, CHANGE IN PROD):"
+echo "  Access: minioadmin"
+echo "  Secret: minioadmin"
+echo ""
+echo "Console: http://localhost:9001"
+echo "API: http://localhost:9000"
