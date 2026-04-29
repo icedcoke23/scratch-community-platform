@@ -59,7 +59,7 @@
     </div>
 
     <!-- 创建竞赛弹窗 -->
-    <el-dialog v-model="showCreateDialog" :title="" width="520px" class="create-dialog">
+    <el-dialog v-model="showCreateDialog"  width="520px" class="create-dialog">
       <div class="dialog-header-section">
         <span class="dialog-mascot">🏆</span>
         <h3>创建新竞赛</h3>

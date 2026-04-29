@@ -46,7 +46,7 @@
     </div>
 
     <!-- 答题弹窗 -->
-    <el-dialog v-model="showSolveDialog" :title="" width="520px" class="solve-dialog">
+    <el-dialog v-model="showSolveDialog"  width="520px" class="solve-dialog">
       <div class="solve-header">
         <h3 class="solve-title">{{ currentProblem?.title }}</h3>
         <span v-if="currentProblem" class="difficulty-badge" :class="`difficulty-${currentProblem.difficulty}`">
@@ -87,7 +87,7 @@
     </el-dialog>
 
     <!-- 结果弹窗 -->
-    <el-dialog v-model="showResultDialog" :title="" width="440px" class="result-dialog">
+    <el-dialog v-model="showResultDialog"  width="440px" class="result-dialog">
       <div class="result-content">
         <div class="result-icon" :class="resultData?.verdict === 'AC' ? 'result-success' : 'result-fail'">
           {{ resultData?.verdict === 'AC' ? '🎉' : '😤' }}
