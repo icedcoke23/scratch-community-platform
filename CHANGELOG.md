@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## [v3.6.1] - 2026-04-29 (热修复)
+
+### 🔧 后端修复
+
+- **JwtUtils 密钥安全增强**: 开发环境未配置密钥时自动生成随机 Base64 密钥（每次启动刷新），降低硬编码默认密钥风险；生产环境强制校验 access/refresh 密钥，禁止默认值，检测到则抛出 `IllegalStateException` 拒绝启动；密钥长度强制校验（≥32 字节）
+- **Token 刷新黑名单增强**: `UserController.refresh()` 调用 `tokenBlacklistService.blacklist()`，旧 refresh token 立即失效，TTL 使用剩余过期时间（`JwtUtils.getRemainingExpiry()` 智能判断 token 类型）
+- **TestRedisMockConfig 完整覆盖**: 增强 `stringRedisTemplate.set()` 所有重载（2 参数和 4 参数）的 mock，并 stub `opsForZSet()` 返回 `ZSetOperations` mock，修复集成测试中黑名单 NPE 问题
+
+### 🔧 前端修复
+
+- **Refresh Token 请求格式对齐**: `doRefreshToken()` 将 refreshToken 从 `Authorization` header 移至请求体 `{"refreshToken":"..."}`，与后端 `/api/v1/user/refresh` 接口期望格式一致（修复 9997 错误）
+- **环境变量配置**: 新增 `.env.example` 模板，支持 `VITE_API_BASE_URL` 配置，`request.ts` 使用 `import.meta.env` 动态读取 API 基础路径
+- **生产构建部署**: 前端重新构建并部署到 `/var/www/html`（21:27）
+
+### 🧪 测试修复
+
+- **集成测试架构优化**: `UserApiIntegrationTest` 和 `SocialApiIntegrationTest` 添加 `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`，解决 `@Nested` 类生命周期问题；`LikeTests` 拆分为独立顶级测试类 `LikeIntegrationTest`
+- **JWT 配置对齐**: `application-test.yml` 的 `scratch.jwt.secret` 改为嵌套结构，与生产配置严格一致，修复集成测试 NPE
+- **Like 接口返回值修正**: `SocialController.like/unlike` 返回类型从 `R<Void>` 改为 `R<Boolean>`，测试断言更新为操作结果（`true`=成功，`false`=幂等）
+
+### 📊 验证结果
+
+- **后端集成测试**: 20/20 ✅
+- **前端单元测试**: 166/166 ✅ (14 个测试文件)
+- **API 全流程验证**: 注册 → 登录 → /me → 刷新 → 登出，全部 200 OK
+- **代码提交**: commit `298a313` (JwtUtils) → `89248ed` (前端刷新修复) 已推送 GitHub
+
+---
+
 ## v3.6.0 (2026-04-29) — 可观测性与韧性
 
 ### 🔍 可观测性增强 (P0)
