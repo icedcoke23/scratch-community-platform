@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="settings-page">
     <h1 class="page-title">
       <span class="title-emoji">⚙️</span>
       个人设置
@@ -8,6 +8,26 @@
     <LoadingSkeleton v-if="loading" variant="detail" />
 
     <template v-else>
+      <!-- 头像卡片 -->
+      <div class="page-card avatar-card">
+        <div class="avatar-section">
+          <div class="avatar-display">
+            <div class="avatar-circle" :style="avatarStyle">
+              <span class="avatar-letter">{{ avatarLetter }}</span>
+            </div>
+            <div class="avatar-level">Lv.{{ userStore.user?.level || 1 }}</div>
+          </div>
+          <div class="avatar-info">
+            <h3>{{ userStore.user?.nickname || userStore.user?.username }}</h3>
+            <p class="avatar-role">
+              <el-tag :type="roleType" size="small" effect="dark">{{ roleLabel }}</el-tag>
+              <span class="points-display">⭐ {{ userStore.user?.points || 0 }} 积分</span>
+            </p>
+            <p class="avatar-joined">加入于 {{ formatDate(userStore.user?.createdAt || '') }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- 基本信息 -->
       <div class="page-card">
         <div class="section-title">👤 基本信息</div>
@@ -32,8 +52,29 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="saveProfile" :loading="saving">
-              保存修改
+            <el-button type="primary" @click="saveProfile" :loading="saving" round>
+              💾 保存修改
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <!-- 修改密码 -->
+      <div class="page-card">
+        <div class="section-title">🔒 修改密码</div>
+        <el-form label-width="80px" label-position="left">
+          <el-form-item label="旧密码">
+            <el-input v-model="pwForm.oldPassword" type="password" show-password placeholder="输入当前密码" />
+          </el-form-item>
+          <el-form-item label="新密码">
+            <el-input v-model="pwForm.newPassword" type="password" show-password placeholder="输入新密码（至少6位）" />
+          </el-form-item>
+          <el-form-item label="确认密码">
+            <el-input v-model="pwForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="warning" @click="changePassword" :loading="changingPw" round>
+              🔑 修改密码
             </el-button>
           </el-form-item>
         </el-form>
@@ -42,297 +83,372 @@
       <!-- 外观设置 -->
       <div class="page-card">
         <div class="section-title">🎨 外观设置</div>
-        <el-form label-width="80px" label-position="left">
-          <el-form-item label="主题">
-            <el-radio-group v-model="currentTheme" @change="onThemeChange">
-              <el-radio-button value="light">☀️ 浅色</el-radio-button>
-              <el-radio-button value="dark">🌙 深色</el-radio-button>
-              <el-radio-button value="auto">🔄 跟随系统</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="语言">
-            <el-select v-model="currentLang" @change="onLangChange" style="width: 200px">
-              <el-option label="简体中文" value="zh-CN" />
-              <el-option label="English" value="en" />
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <!-- 通知设置 -->
-      <div class="page-card">
-        <div class="section-title">🔔 通知设置</div>
-        <el-form label-width="120px" label-position="left">
-          <el-form-item label="点赞通知">
-            <el-switch v-model="notifications.like" />
-          </el-form-item>
-          <el-form-item label="评论通知">
-            <el-switch v-model="notifications.comment" />
-          </el-form-item>
-          <el-form-item label="作业通知">
-            <el-switch v-model="notifications.homework" />
-          </el-form-item>
-          <el-form-item label="竞赛通知">
-            <el-switch v-model="notifications.competition" />
-          </el-form-item>
-          <el-form-item label="系统通知">
-            <el-switch v-model="notifications.system" />
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <!-- 账号安全 -->
-      <div class="page-card">
-        <div class="section-title">🔒 账号安全</div>
-        <div class="security-items">
-          <div class="security-item">
-            <div class="security-info">
-              <div class="security-label">修改密码</div>
-              <div class="security-desc">定期修改密码有助于保护账号安全</div>
-            </div>
-            <el-button @click="showChangePassword = true">修改</el-button>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">深色模式</div>
+            <div class="setting-desc">切换深色/浅色主题</div>
           </div>
-          <div class="security-item">
-            <div class="security-info">
-              <div class="security-label">退出登录</div>
-              <div class="security-desc">退出当前设备的登录状态</div>
+          <el-switch v-model="isDark" @change="toggleTheme" size="large" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">语言</div>
+            <div class="setting-desc">切换界面语言</div>
+          </div>
+          <el-radio-group v-model="currentLocale" @change="toggleLocale" size="small">
+            <el-radio-button label="zh-CN">中文</el-radio-button>
+            <el-radio-button label="en">EN</el-radio-button>
+          </el-radio-group>
+        </div>
+      </div>
+
+      <!-- 第三方账号 -->
+      <div class="page-card">
+        <div class="section-title">🔗 第三方账号</div>
+        <div class="oauth-list">
+          <div v-for="provider in oauthProviders" :key="provider.key" class="oauth-item">
+            <div class="oauth-info">
+              <span class="oauth-icon">{{ provider.icon }}</span>
+              <span class="oauth-name">{{ provider.name }}</span>
             </div>
-            <el-button type="danger" @click="handleLogout">退出</el-button>
+            <el-button
+              v-if="!provider.bound"
+              type="primary"
+              size="small"
+              plain
+              round
+              @click="bindOAuth(provider.key)"
+            >
+              绑定
+            </el-button>
+            <el-button
+              v-else
+              type="danger"
+              size="small"
+              text
+              @click="unbindOAuth(provider.key)"
+            >
+              解绑
+            </el-button>
           </div>
         </div>
       </div>
 
-      <!-- 数据导出 -->
-      <div class="page-card">
-        <div class="section-title">📦 数据管理</div>
-        <div class="security-items">
-          <div class="security-item">
-            <div class="security-info">
-              <div class="security-label">导出我的数据</div>
-              <div class="security-desc">下载你的项目、积分等个人数据</div>
-            </div>
-            <el-button @click="exportData">导出</el-button>
+      <!-- 危险操作 -->
+      <div class="page-card danger-card">
+        <div class="section-title danger-title">⚠️ 危险操作</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">退出登录</div>
+            <div class="setting-desc">退出当前账号，需要重新登录</div>
           </div>
+          <el-button type="danger" @click="handleLogout" round>退出登录</el-button>
         </div>
       </div>
     </template>
-
-    <!-- 修改密码弹窗 -->
-    <el-dialog v-model="showChangePassword" title="修改密码" width="400px">
-      <el-form label-width="80px">
-        <el-form-item label="当前密码">
-          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="新密码">
-          <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="至少6位含字母数字" />
-        </el-form-item>
-        <el-form-item label="确认密码">
-          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showChangePassword = false">取消</el-button>
-        <el-button type="primary" @click="changePassword" :loading="changingPassword">确认修改</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'Settings' })
-
-import { ref, reactive, onMounted } from 'vue'
+defineOptions({ name: 'SettingsView' })
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useTheme, type ThemeMode } from '@/composables/useTheme'
-import { useI18n, type Locale } from '@/composables/useI18n'
 import { userApi } from '@/api'
+import { useUserStore } from '@/stores/user'
+import { formatDate } from '@/utils'
 import { ElMessage } from 'element-plus'
 import { getErrorMessage } from '@/utils/error'
+import { useI18n } from '@/composables/useI18n'
+import { useTheme } from '@/composables/useTheme'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { themeMode, setTheme } = useTheme()
-const { locale, setLocale } = useI18n()
+const { locale, t: i18nT } = useI18n()
+const { isDark, toggleTheme: rawToggleTheme } = useTheme()
 
 const loading = ref(true)
 const saving = ref(false)
-const showChangePassword = ref(false)
-const changingPassword = ref(false)
+const changingPw = ref(false)
 
-const form = reactive({
+const form = ref({
   nickname: '',
   email: '',
   bio: ''
 })
 
-const notifications = reactive({
-  like: true,
-  comment: true,
-  homework: true,
-  competition: true,
-  system: true
-})
-
-const passwordForm = reactive({
+const pwForm = ref({
   oldPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
-const currentTheme = ref<ThemeMode>('light')
-const currentLang = ref<Locale>('zh-CN')
+const currentLocale = ref(locale.value)
+
+const avatarLetter = computed(() => (userStore.user?.nickname || userStore.user?.username || '?')[0].toUpperCase())
+const roleLabel = computed(() => ({ STUDENT: '学生', TEACHER: '教师', ADMIN: '管理员' }[userStore.user?.role || 'STUDENT'] || '学生'))
+const roleType = computed(() => ({ ADMIN: 'danger', TEACHER: 'warning' }[userStore.user?.role || ''] || 'info') as 'danger' | 'warning' | 'info')
+
+const avatarStyle = computed(() => ({
+  background: `linear-gradient(135deg, ${userStore.user?.role === 'ADMIN' ? '#EF4444' : userStore.user?.role === 'TEACHER' ? '#F59E0B' : '#3B82F6'}, #8B5CF6)`
+}))
+
+const oauthProviders = ref([
+  { key: 'github', name: 'GitHub', icon: '🐙', bound: false },
+  { key: 'wechat', name: '微信', icon: '💬', bound: false },
+  { key: 'google', name: 'Google', icon: '🔍', bound: false }
+])
+
+function toggleTheme() {
+  rawToggleTheme()
+}
+
+function toggleLocale() {
+  locale.value = currentLocale.value
+}
+
+async function loadProfile() {
+  try {
+    const res = await userApi.getMyInfo()
+    if (res.code === 0 && res.data) {
+      form.value.nickname = res.data.nickname || ''
+      form.value.email = (res.data as any).email || ''
+      form.value.bio = res.data.bio || ''
+    }
+  } catch { /* ignore */ }
+  finally { loading.value = false }
+}
 
 async function saveProfile() {
-  if (!form.nickname.trim()) {
-    ElMessage.warning('昵称不能为空')
-    return
-  }
   saving.value = true
   try {
     const res = await userApi.updateProfile({
-      nickname: form.nickname.trim(),
-      email: form.email.trim() || undefined,
-      bio: form.bio.trim() || undefined
+      nickname: form.value.nickname,
+      email: form.value.email,
+      bio: form.value.bio
     })
     if (res.code === 0) {
-      ElMessage.success('✅ 保存成功')
-      // 更新本地 store 中的用户信息
-      if (userStore.user) {
-        userStore.user.nickname = form.nickname.trim()
-        userStore.user.bio = form.bio.trim()
-      }
+      ElMessage.success('保存成功！')
+      userStore.fetchUser()
     } else {
       ElMessage.error(res.msg || '保存失败')
     }
   } catch (e: unknown) {
-    ElMessage.error(getErrorMessage(e) || '保存失败')
-  } finally {
-    saving.value = false
-  }
-}
-
-function onThemeChange(mode: ThemeMode) {
-  setTheme(mode)
-}
-
-function onLangChange(lang: Locale) {
-  setLocale(lang)
+    ElMessage.error(getErrorMessage(e))
+  } finally { saving.value = false }
 }
 
 async function changePassword() {
-  if (!passwordForm.oldPassword || !passwordForm.newPassword) {
-    ElMessage.warning('请填写所有字段')
-    return
-  }
-  if (passwordForm.newPassword.length < 6) {
+  if (pwForm.value.newPassword.length < 6) {
     ElMessage.warning('新密码至少6位')
     return
   }
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-    ElMessage.warning('两次密码不一致')
+  if (pwForm.value.newPassword !== pwForm.value.confirmPassword) {
+    ElMessage.warning('两次密码输入不一致')
     return
   }
-  changingPassword.value = true
+  changingPw.value = true
   try {
     const res = await userApi.changePassword({
-      oldPassword: passwordForm.oldPassword,
-      newPassword: passwordForm.newPassword
+      oldPassword: pwForm.value.oldPassword,
+      newPassword: pwForm.value.newPassword
     })
     if (res.code === 0) {
-      ElMessage.success('✅ 密码修改成功')
-      showChangePassword.value = false
-      passwordForm.oldPassword = ''
-      passwordForm.newPassword = ''
-      passwordForm.confirmPassword = ''
+      ElMessage.success('密码修改成功！')
+      pwForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
     } else {
       ElMessage.error(res.msg || '修改失败')
     }
   } catch (e: unknown) {
-    ElMessage.error(getErrorMessage(e) || '修改失败')
-  } finally {
-    changingPassword.value = false
-  }
+    ElMessage.error(getErrorMessage(e))
+  } finally { changingPw.value = false }
+}
+
+async function bindOAuth(provider: string) {
+  ElMessage.info(`${provider} 绑定功能即将开放`)
+}
+
+async function unbindOAuth(provider: string) {
+  ElMessage.info(`${provider} 解绑功能即将开放`)
 }
 
 function handleLogout() {
   userStore.logout()
-  ElMessage.success('已退出')
   router.push('/feed')
+  ElMessage.success('已退出登录')
 }
 
-function exportData() {
-  ElMessage.info('数据导出功能开发中')
-}
-
-onMounted(() => {
-  if (userStore.user) {
-    form.nickname = userStore.user.nickname || ''
-    form.email = '' // email 不在 User 类型中
-    form.bio = userStore.user.bio || ''
-  }
-  currentTheme.value = themeMode.value
-  currentLang.value = locale.value
-  loading.value = false
-})
+onMounted(loadProfile)
 </script>
 
 <style scoped>
+.settings-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Avatar Card */
+.avatar-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+}
+
+.avatar-section {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.avatar-display {
+  position: relative;
+}
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+}
+
+.avatar-circle:hover {
+  transform: scale(1.08) rotate(5deg);
+}
+
+.avatar-letter {
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.avatar-level {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #F59E0B, #EF4444);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.5);
+}
+
+.avatar-info h3 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.avatar-role {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 4px;
+}
+
+.points-display {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatar-joined {
+  font-size: 13px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* Sections */
 .section-title {
   font-weight: 700;
   font-size: 18px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.security-items {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.security-item {
+/* Setting Rows */
+.setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border, #e5e7eb);
 }
 
-.security-item:last-child {
+.setting-row:last-child {
   border-bottom: none;
 }
 
-.security-label {
-  font-size: 16px;
+.setting-label {
   font-weight: 600;
-  color: var(--text);
+  font-size: 15px;
+  color: var(--text, #1a1a2e);
 }
 
-.security-desc {
-  font-size: 14px;
-  color: var(--text2);
-  margin-top: 4px;
+.setting-desc {
+  font-size: 13px;
+  color: var(--text2, #64748b);
+  margin-top: 2px;
 }
 
+/* OAuth */
+.oauth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.oauth-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg, #f5f5f5);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.oauth-item:hover {
+  background: var(--border, #e5e7eb);
+}
+
+.oauth-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oauth-icon {
+  font-size: 24px;
+}
+
+.oauth-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Danger */
+.danger-card {
+  border: 2px solid #FEE2E2;
+  background: #FEF2F2;
+}
+
+.danger-title {
+  color: #DC2626;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  :deep(.el-form-item__label) {
-    font-size: 14px;
-  }
-  .security-item {
+  .avatar-section {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    text-align: center;
   }
-}
-
-@media (max-width: 480px) {
-  :deep(.el-radio-button__inner) {
-    padding: 8px 14px;
-    font-size: 13px;
+  .avatar-role {
+    justify-content: center;
   }
 }
 </style>

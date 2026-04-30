@@ -633,4 +633,297 @@ body {
   background: var(--primary-bg);
   color: var(--primary-dark);
 }
+
+/* === 增强动画和微交互 === */
+
+/* 卡片入场动画 */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-card {
+  animation: card-enter 0.4s var(--smooth) both;
+}
+
+.page-card:nth-child(2) { animation-delay: 0.05s; }
+.page-card:nth-child(3) { animation-delay: 0.1s; }
+.page-card:nth-child(4) { animation-delay: 0.15s; }
+.page-card:nth-child(5) { animation-delay: 0.2s; }
+
+/* 数字跳动效果 */
+@keyframes number-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.stat-value,
+.stat-number,
+.stat-num {
+  transition: transform 0.3s var(--bounce);
+}
+
+.stat-value:hover,
+.stat-number:hover,
+.stat-num:hover {
+  animation: number-pop 0.4s var(--bounce);
+}
+
+/* 渐变文字效果 */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 浮动效果 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.float-anim {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 脉冲效果 */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.pulse-anim {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* 标题波浪 */
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-15deg); }
+}
+
+.title-emoji {
+  display: inline-block;
+  animation: wave 2s ease-in-out infinite;
+  transform-origin: 70% 70%;
+}
+
+/* 骨架屏闪烁 */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg) 25%, var(--border) 50%, var(--bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* 按钮点击波纹 */
+.el-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.el-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.el-button:active::after {
+  opacity: 1;
+}
+
+/* 表格行悬停增强 */
+.el-table tr {
+  transition: all 0.2s ease;
+}
+
+.el-table tr:hover > td {
+  background: var(--primary-bg) !important;
+}
+
+/* Tag 微交互 */
+.el-tag {
+  transition: all 0.2s var(--bounce);
+}
+
+.el-tag:hover {
+  transform: scale(1.05);
+}
+
+/* 头像悬停效果 */
+.profile-avatar,
+.avatar-circle {
+  transition: transform 0.3s var(--bounce), box-shadow 0.3s ease;
+}
+
+.profile-avatar:hover,
+.avatar-circle:hover {
+  transform: scale(1.08) rotate(3deg);
+}
+
+/* 进度条动画 */
+.progress-fill {
+  transition: width 0.8s var(--smooth);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: progress-shine 2s ease-in-out infinite;
+}
+
+@keyframes progress-shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 空状态动画 */
+.empty-state {
+  animation: card-enter 0.5s var(--smooth) both;
+}
+
+/* 响应式表格 */
+@media (max-width: 768px) {
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+  :deep(.el-table .cell) {
+    padding: 6px 4px;
+  }
+  :deep(.el-dialog) {
+    width: 90% !important;
+    margin: 16px auto;
+  }
+}
+
+@media (max-width: 480px) {
+  :deep(.el-table) {
+    font-size: 11px;
+  }
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+}
+
+/* 用户徽章动画 */
+.user-badge {
+  transition: all 0.2s var(--bounce);
+}
+
+.user-badge:hover {
+  transform: scale(1.08);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* 通知图标摇动 */
+@keyframes bell-shake {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.notification-badge:hover .icon-btn {
+  animation: bell-shake 0.6s ease-in-out;
+}
+
+/* 搜索框聚焦增强 */
+.search-input :deep(.el-input__wrapper:focus-within) {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), var(--shadow);
+  border-color: var(--primary);
+}
+
+/* Tab 切换下划线动画 */
+.tab-item {
+  position: relative;
+}
+
+.tab-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: all 0.3s var(--bounce);
+  transform: translateX(-50%);
+}
+
+.tab-item.active::after {
+  width: 60%;
+}
+
+.tab-item:hover::after {
+  width: 40%;
+}
+
+/* 项目卡片悬停效果增强 */
+.project-card {
+  transition: all 0.3s var(--bounce);
+}
+
+.project-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-xl);
+}
+
+/* 成就卡片解锁动画 */
+@keyframes unlock {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.achievement-unlocked {
+  animation: unlock 0.5s var(--bounce);
+}
+
+/* 加载更多按钮脉冲 */
+.load-more-btn {
+  position: relative;
+}
+
+.load-more-btn::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s;
+  filter: blur(8px);
+}
+
+.load-more-btn:hover::before {
+  opacity: 0.3;
+}
 </style>
