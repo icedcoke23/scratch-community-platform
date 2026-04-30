@@ -16,6 +16,7 @@ const ALL_NAV_LINKS: NavLink[] = [
   { path: '/problems', labelKey: 'nav.problems', label: '题库', roles: ['all'], icon: '📝' },
   { path: '/competition', labelKey: 'nav.competition', label: '竞赛', roles: ['all'], icon: '🏆' },
   { path: '/rank', labelKey: 'nav.rank', label: '排行榜', roles: ['all'], icon: '🏅' },
+  { path: '/class', labelKey: 'nav.class', label: '班级', roles: ['all'], icon: '🏫' },
   { path: '/points', labelKey: 'nav.points', label: '积分', roles: ['all'], icon: '⭐' },
   { path: '/homework', labelKey: 'nav.homework', label: '作业', roles: ['all'], icon: '📚' },
   { path: '/analytics', labelKey: 'nav.analytics', label: '学情', roles: ['TEACHER', 'ADMIN'], icon: '📊' },

@@ -90,10 +90,22 @@ const router = createRouter({
     },
     // ===== 教室模块 =====
     {
+      path: '/class',
+      name: 'ClassManage',
+      component: () => import('@/views/classroom/ClassManageView.vue'),
+      meta: { title: '班级管理', requiresAuth: true, keepAlive: true }
+    },
+    {
       path: '/homework',
       name: 'Homework',
       component: () => import('@/views/classroom/HomeworkView.vue'),
       meta: { title: '作业', requiresAuth: true, keepAlive: true }
+    },
+    {
+      path: '/homework/create',
+      name: 'HomeworkCreate',
+      component: () => import('@/views/classroom/HomeworkCreateView.vue'),
+      meta: { title: '布置作业', requiresAuth: true, requiresTeacher: true }
     },
     {
       path: '/homework/:id',
@@ -120,6 +132,24 @@ const router = createRouter({
       name: 'Admin',
       component: () => import('@/views/admin/AdminView.vue'),
       meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/audit',
+      name: 'AdminAudit',
+      component: () => import('@/views/admin/AuditView.vue'),
+      meta: { title: '内容审核', requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/config',
+      name: 'AdminConfig',
+      component: () => import('@/views/admin/SystemConfigView.vue'),
+      meta: { title: '系统配置', requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/admin/problems',
+      name: 'AdminProblems',
+      component: () => import('@/views/admin/ProblemManageView.vue'),
+      meta: { title: '题目管理', requiresAuth: true, requiresAdmin: true }
     },
     // ===== 通知模块 =====
     {

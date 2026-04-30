@@ -65,9 +65,9 @@
             <span class="nav-icon">🏆</span>
             <span>排行榜</span>
           </router-link>
-          <router-link to="/problems" class="nav-item">
+          <router-link to="/admin/problems" class="nav-item">
             <span class="nav-icon">🧩</span>
-            <span>题库管理</span>
+            <span>题目管理</span>
           </router-link>
           <router-link to="/class" class="nav-item">
             <span class="nav-icon">📚</span>
@@ -80,6 +80,30 @@
           <router-link to="/editor" class="nav-item">
             <span class="nav-icon">✏️</span>
             <span>新建项目</span>
+          </router-link>
+          <router-link to="/admin/audit" class="nav-item">
+            <span class="nav-icon">🔍</span>
+            <span>内容审核</span>
+          </router-link>
+          <router-link to="/admin/config" class="nav-item">
+            <span class="nav-icon">⚙️</span>
+            <span>系统配置</span>
+          </router-link>
+          <router-link to="/homework/create" class="nav-item">
+            <span class="nav-icon">📝</span>
+            <span>布置作业</span>
+          </router-link>
+          <router-link to="/analytics" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span>学情分析</span>
+          </router-link>
+          <router-link to="/notifications" class="nav-item">
+            <span class="nav-icon">🔔</span>
+            <span>通知中心</span>
+          </router-link>
+          <router-link to="/settings" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>个人设置</span>
           </router-link>
         </div>
       </div>
