@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { projectApi } from '@/api'
 
 const props = withDefaults(defineProps<{
   /** 项目ID */
@@ -107,9 +108,12 @@ const isFullscreen = ref(false)
 
 const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 
+// TurboWarp embed URL（播放器模式，用于预览）
+// 注意：不能用 turbowarp.org/{id}/embed，因为 {id} 是我们平台的项目 ID，不是 Scratch 官方项目 ID
+// 使用空 embed + autostart，后续通过 postMessage 加载 sb3 数据
 const playerUrl = computed(() => {
   if (!props.projectId) return ''
-  return `https://turbowarp.org/${props.projectId}/embed?autostart=true&controls=${props.showControls ? 'true' : 'false'}`
+  return `https://turbowarp.org/embed?autostart=true&controls=${props.showControls ? 'true' : 'false'}`
 })
 
 function loadPreview() {
@@ -121,6 +125,29 @@ function loadPreview() {
 function onLoad() {
   loading.value = false
   emit('loaded')
+  // iframe 加载完成后，获取 sb3 URL 并通过 postMessage 加载项目
+  loadProjectIntoPreview()
+}
+
+/**
+ * 获取项目的 sb3 URL 并通过 postMessage 发送给 TurboWarp embed
+ */
+async function loadProjectIntoPreview() {
+  if (!props.projectId || !iframeRef.value?.contentWindow) return
+  try {
+    const res = await projectApi.getSb3Url(props.projectId)
+    if (res.code === 0 && res.data) {
+      const sb3Url = res.data as unknown as string
+      // TurboWarp embed 支持 load-project 消息来加载 sb3 文件
+      iframeRef.value.contentWindow.postMessage(
+        { type: 'load-project', url: sb3Url },
+        'https://turbowarp.org'
+      )
+    }
+  } catch (e) {
+    // 静默处理，预览加载失败不影响主流程
+    console.warn('Scratch 预览加载项目失败:', e)
+  }
 }
 
 function reload() {
