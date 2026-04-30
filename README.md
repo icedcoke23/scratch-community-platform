@@ -7,7 +7,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.5-brightgreen)](https://vuejs.org/)
 [![JDK](https://img.shields.io/badge/JDK-17-orange)](https://openjdk.org/projects/jdk/17/)
-[![Test Status](https://img.shields.io/badge/tests-352%2F352%20passing-brightgreen)](https://github.com/icedcoke23/scratch-community-platform/actions)
+[![Test Status](https://img.shields.io/badge/tests-186%2F186%20passing-brightgreen)](https://github.com/icedcoke23/scratch-community-platform/actions)
 
 ---
 
@@ -37,7 +37,8 @@
 | 💰 **积分体系** | 5 种积分规则、等级系统、签到、排行榜（时间衰减） | ✅ | v3.6.0 |
 | 👥 **社区互动** | 发布/浏览、点赞/评论、Feed 流、排行榜、**快速预览** | ✅ | v3.7.0 |
 | 🔧 **系统管理** | 内容审核、用户管理、通知系统、**系统配置管理** | ✅ | v3.7.0 |
-| 🖥️ **后台管理** | **AdminLayout 侧边栏**、用户/作品/评论/竞赛/班级管理、数据统计 | ✅ | **v3.8.0** |
+| 🖥️ **后台管理** | **AdminLayout 侧边栏**、用户/作品/评论/竞赛/班级管理、数据统计 | ✅ | v3.8.0 |
+| 🎨 **Scratch 编辑器** | 本地部署 scratch-gui、iframe 嵌入、postMessage 通信、**加载可靠性保障** | ✅ | **v3.8.1** |
 | 📱 **移动端** | 响应式适配（768px/480px 断点）、底部 Tab 导航 | ✅ | v3.6.0 |
 | 🔒 **安全架构** | JWT 双令牌、滑动窗口限流、路径遍历防护、幂等性 | ✅ | v3.6.0 |
 

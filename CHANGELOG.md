@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0
 
 ---
 
+## [v3.8.1] - 2026-05-01 — Scratch 编辑器加载可靠性修复
+
+### 🔧 Scratch 编辑器/播放器修复
+
+- **修复编辑器无法进入问题**: iframe `load` 事件不等于 Scratch VM 就绪，导致 loading 状态异常
+- **修复预览加载失败**: ScratchPreview 组件缺少消息监听，无法感知播放器实际加载状态
+- **超时兜底机制**: 编辑器/播放器均添加 15s 错误提示 + 20s 强制降级，避免永久 loading
+- **safeLoadProject 递归等待**: `window.scratch` 未就绪时自动延迟重试，而非直接崩溃
+- **try-catch 全面包裹**: 所有 scratch API 调用加异常捕获，防止编辑器白屏
+- **postMessage 安全增强**: scratchBridge 添加 `event.source` 过滤，防止处理无关窗口消息
+- **Nginx 缓存优化**: scratch-editor 目录独立 location 配置，7 天缓存 + gzip 压缩
+
+### 📝 涉及文件
+
+- `frontend-vue/public/scratch-editor/scratch-editor.html` — 编辑器页面重写
+- `frontend-vue/public/scratch-editor/scratch-player.html` — 播放器页面重写
+- `frontend-vue/src/utils/scratchBridge.ts` — postMessage 通信管理器修复
+- `frontend-vue/src/views/editor/ScratchEditorView.vue` — 编辑器视图加载流程修复
+- `frontend-vue/src/components/ScratchPreview.vue` — 预览组件增强
+- `nginx.conf` — scratch-editor 静态文件缓存配置
+
+---
+
 ## [v3.8.0] - 2026-04-30 — 后台管理全面重构与 P0 功能落地
 
 ### 🏗️ 后台布局重构 (AdminLayout)

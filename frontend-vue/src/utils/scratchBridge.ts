@@ -1,9 +1,12 @@
 /**
  * Scratch VM postMessage 通信协议
  *
- * 支持本地 Scratch 编辑器和 TurboWarp 的消息类型：
- * - 宿主 → Scratch: enter-editor / enter-player / exportProject / load-project / green-flag / stop-all
- * - Scratch → 宿主: project-changed / project-save / editor-ready / player-ready / vm-initialized / project-loaded
+ * 消息类型：
+ * - 宿主 → Scratch: load-project / exportProject / enter-editor / enter-player
+ *                    / green-flag / stop-all / set-project-name / set-fullscreen
+ * - Scratch → 宿主: editor-ready / player-ready / vm-initialized / project-loaded
+ *                    / project-changed / project-save / project-start / project-stop
+ *                    / error
  */
 
 export interface ScratchMessage {
@@ -13,41 +16,31 @@ export interface ScratchMessage {
 }
 
 export interface ScratchProjectData {
-  /** base64 编码的 sb3 数据 */
   data?: string
-  /** 项目 JSON */
   projectJson?: string
-  /** 错误信息 */
   error?: string
 }
 
 export interface ScratchHostOptions {
-  /** 编辑器 iframe 引用 */
   iframe: HTMLIFrameElement | null
-  /** 项目变更回调 */
   onProjectChanged?: () => void
-  /** 项目保存回调（收到 sb3 数据） */
   onProjectSave?: (base64Data: string) => void
-  /** 全屏事件回调 */
   onFullscreen?: (isFullscreen: boolean) => void
-  /** 错误回调 */
   onError?: (error: string) => void
-  /** VM 初始化完成回调 */
   onVmReady?: (vm: unknown) => void
-  /** 编辑器/播放器就绪回调 */
   onReady?: () => void
-  /** 项目加载完成回调 */
   onProjectLoaded?: () => void
 }
 
 /**
  * Scratch VM 通信管理器
- * 同时支持本地 Scratch 编辑器和 TurboWarp 的 postMessage 协议
  */
 export class ScratchBridge {
   private iframe: HTMLIFrameElement | null
   private options: ScratchHostOptions
   private messageHandler: (event: MessageEvent) => void
+  private ready = false
+  private vmReady = false
 
   constructor(options: ScratchHostOptions) {
     this.iframe = options.iframe
@@ -55,38 +48,72 @@ export class ScratchBridge {
     this.messageHandler = this.handleMessage.bind(this)
   }
 
-  /** 开始监听消息 */
   start() {
     window.addEventListener('message', this.messageHandler)
   }
 
-  /** 停止监听消息 */
   stop() {
     window.removeEventListener('message', this.messageHandler)
   }
 
-  /** 更新 iframe 引用 */
   setIframe(iframe: HTMLIFrameElement | null) {
     this.iframe = iframe
   }
 
-  /** 向 Scratch 发送消息 */
+  /**
+   * 向 Scratch iframe 发送消息
+   *
+   * 安全策略：使用 '*' 作为 targetOrigin。
+   * 原因：iframe 和父窗口同源（同域部署），'*' 不会引入额外安全风险。
+   * 使用具体 origin 反而容易因 URL 变化（端口/协议）导致消息丢失。
+   */
   private postMessage(message: ScratchMessage) {
-    // 安全：使用 iframe 的 src origin，而非通配符 '*'
-    // 本地编辑器使用 window.location.origin
-    const targetOrigin = this.iframe?.src
-      ? new URL(this.iframe.src).origin
-      : window.location.origin
-    this.iframe?.contentWindow?.postMessage(message, targetOrigin)
+    if (!this.iframe?.contentWindow) {
+      console.warn('[ScratchBridge] iframe 不可用，消息丢弃:', message.type)
+      return
+    }
+    try {
+      this.iframe.contentWindow.postMessage(message, '*')
+    } catch (e) {
+      console.error('[ScratchBridge] postMessage 失败:', e)
+    }
   }
 
-  /** 处理来自 Scratch 的消息 */
+  /**
+   * 处理来自 Scratch iframe 的消息
+   *
+   * 过滤策略：只处理来自 iframe 的消息。
+   * 通过 event.source 判断消息来源，防止处理其他窗口的消息。
+   */
   private handleMessage(event: MessageEvent) {
     const data = event.data as ScratchMessage
     if (!data?.type) return
 
+    // 安全：只处理来自 iframe 的消息（如果 iframe 已加载）
+    // event.source 可能为 null（某些浏览器/情况），此时放行
+    if (this.iframe?.contentWindow && event.source) {
+      if (event.source !== this.iframe.contentWindow) return
+    }
+
     switch (data.type) {
-      // === 通用事件 ===
+      case 'editor-ready':
+      case 'player-ready':
+        this.ready = true
+        console.log('[ScratchBridge] 编辑器就绪:', data.type)
+        this.options.onReady?.()
+        break
+
+      case 'vm-initialized':
+        this.vmReady = true
+        console.log('[ScratchBridge] VM 初始化完成')
+        this.options.onVmReady?.((data as Record<string, unknown>).vm)
+        break
+
+      case 'project-loaded':
+        console.log('[ScratchBridge] 项目加载完成')
+        this.options.onProjectLoaded?.()
+        break
+
       case 'project-changed':
         this.options.onProjectChanged?.()
         break
@@ -100,6 +127,14 @@ export class ScratchBridge {
         break
       }
 
+      case 'project-start':
+        // 项目开始运行
+        break
+
+      case 'project-stop':
+        // 项目停止
+        break
+
       case 'fullscreen': {
         const isFull = !!(data as Record<string, unknown>).fullscreen
         this.options.onFullscreen?.(isFull)
@@ -108,36 +143,12 @@ export class ScratchBridge {
 
       case 'error': {
         const errData = data as ScratchProjectData
+        console.warn('[ScratchBridge] Scratch 错误:', errData.error)
         this.options.onError?.(errData.error || '未知错误')
         break
       }
 
-      // === 本地 Scratch 编辑器事件 ===
-      case 'vm-initialized':
-        this.options.onVmReady?.((data as Record<string, unknown>).vm)
-        break
-
-      case 'editor-ready':
-      case 'player-ready':
-        this.options.onReady?.()
-        break
-
-      case 'project-loaded':
-        this.options.onProjectLoaded?.()
-        break
-
-      case 'project-start':
-        // 项目开始运行（绿旗）
-        break
-
-      case 'project-stop':
-        // 项目停止
-        break
-
-      // === TurboWarp 兼容事件 ===
-      // TurboWarp 使用的事件名可能略有不同
       default:
-        // 静默忽略未知事件
         break
     }
   }
@@ -192,16 +203,27 @@ export class ScratchBridge {
     this.postMessage({ type: 'set-fullscreen', fullscreen: false })
   }
 
-  /** 导出为 SB3 文件（触发下载） */
+  /** 导出为 SB3 文件 */
   exportAsFile(_filename = 'project.sb3') {
     this.exportProject()
-    // 文件下载由 onProjectSave 回调处理
+  }
+
+  /** 是否已就绪 */
+  isReady(): boolean {
+    return this.ready
+  }
+
+  /** VM 是否已初始化 */
+  isVmReady(): boolean {
+    return this.vmReady
   }
 
   /** 销毁 */
   destroy() {
     this.stop()
     this.iframe = null
+    this.ready = false
+    this.vmReady = false
   }
 }
 

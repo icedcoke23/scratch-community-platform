@@ -6,7 +6,7 @@
   <title>Scratch 播放器</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1e1e2e; }
     #scratch { width: 100%; height: 100%; }
     #loading {
       position: fixed; inset: 0;
@@ -27,28 +27,63 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { margin-top: 16px; font-size: 14px; opacity: 0.8; }
+    .loading-error {
+      margin-top: 12px; font-size: 13px; color: #f38ba8;
+      display: none; text-align: center; max-width: 400px;
+    }
+    .loading-error.show { display: block; }
   </style>
 </head>
 <body>
   <div id="loading">
     <div class="spinner"></div>
     <div class="loading-text">项目加载中...</div>
+    <div class="loading-error" id="loadingError"></div>
   </div>
   <div id="scratch"></div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const projectUrl = params.get('project_url') || '';
+    var params = new URLSearchParams(window.location.search);
+    var projectUrl = params.get('project_url') || '';
+    var vmReady = false;
+    var projectLoaded = false;
 
     function postToParent(type, data) {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type, ...data }, '*');
-      }
+      try {
+        if (window.parent && window.parent !== window) {
+          var msg = Object.assign({ type: type }, data || {});
+          window.parent.postMessage(msg, '*');
+        }
+      } catch (e) {}
     }
 
     function hideLoading() {
-      const el = document.getElementById('loading');
+      var el = document.getElementById('loading');
       if (el) el.classList.add('hidden');
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('loadingError');
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+      var spinner = document.querySelector('.spinner');
+      if (spinner) spinner.style.display = 'none';
+      var text = document.querySelector('.loading-text');
+      if (text) text.textContent = '加载失败';
+    }
+
+    function safeLoadProject(url, callback) {
+      if (!window.scratch) {
+        setTimeout(function() { safeLoadProject(url, callback); }, 500);
+        return;
+      }
+      try {
+        window.scratch.loadProject(url, function() {
+          if (callback) callback();
+        });
+      } catch (e) {
+        showError('项目加载失败: ' + e.message);
+        postToParent('error', { error: e.message });
+      }
     }
 
     // 播放器配置
@@ -69,7 +104,7 @@
       },
       blocks: { scale: 1 },
       stageArea: {
-        scale: window.innerWidth / 480,
+        scale: Math.min(window.innerWidth / 480, window.innerHeight / 360),
         width: 480,
         height: 360,
         showControl: true,
@@ -80,17 +115,20 @@
       },
       handleVmInitialized: function(vm) {
         window.vm = vm;
+        vmReady = true;
         postToParent('vm-initialized', {});
         // 自动运行
         setTimeout(function() {
-          vm.greenFlag();
+          try { vm.greenFlag(); } catch(e) {}
         }, 500);
       },
       handleProjectLoaded: function() {
+        projectLoaded = true;
         postToParent('project-loaded', {});
         hideLoading();
       },
       handleDefaultProjectLoaded: function() {
+        projectLoaded = true;
         postToParent('project-loaded', { isDefault: true });
         hideLoading();
       },
@@ -98,42 +136,53 @@
 
     // 监听父窗口消息
     window.addEventListener('message', function(event) {
-      const data = event.data;
+      var data = event.data;
       if (!data || !data.type) return;
 
       switch (data.type) {
         case 'load-project':
-          if (data.url && window.scratch) {
-            window.scratch.loadProject(data.url, function() {
+          if (data.url) {
+            safeLoadProject(data.url, function() {
               postToParent('project-loaded', { url: data.url });
             });
           }
           break;
         case 'green-flag':
-          if (window.vm) window.vm.greenFlag();
+          if (window.vm) try { window.vm.greenFlag(); } catch(e) {}
           break;
         case 'stop-all':
-          if (window.vm) window.vm.stopAll();
+          if (window.vm) try { window.vm.stopAll(); } catch(e) {}
           break;
       }
     });
 
-    // 自动加载项目
+    // 页面加载后
     window.addEventListener('load', function() {
-      if (projectUrl && window.scratch) {
-        window.scratch.loadProject(projectUrl, function() {
+      postToParent('player-ready', {});
+
+      if (projectUrl) {
+        safeLoadProject(projectUrl, function() {
           postToParent('project-loaded', { url: projectUrl });
           hideLoading();
         });
-      } else {
-        hideLoading();
       }
-    });
 
-    postToParent('player-ready', {});
+      // 超时兜底
+      setTimeout(function() {
+        if (!vmReady) {
+          showError('播放器初始化超时，请检查网络连接后重试');
+          postToParent('error', { error: 'Scratch VM 初始化超时' });
+        }
+      }, 15000);
+
+      setTimeout(function() {
+        if (!projectLoaded) {
+          hideLoading();
+        }
+      }, 20000);
+    });
   </script>
 
-  <!-- Scratch 核心库 (来自 teaching-open 预编译版本) -->
   <script src="./lib.min.js"></script>
   <script src="./chunks/player.js"></script>
 </body>

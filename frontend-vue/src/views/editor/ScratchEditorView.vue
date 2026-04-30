@@ -251,9 +251,9 @@ async function buildEditorUrl() {
   }
 }
 
-// iframe 加载完成
+// iframe HTML 加载完成（此时 Scratch VM 可能还未就绪）
 function onIframeLoad() {
-  loading.value = false
+  // 不在这里隐藏 loading —— 等 editor-ready 消息确认 Scratch 就绪后再隐藏
   setupEditorCommunication()
 }
 
@@ -265,7 +265,12 @@ function setupEditorCommunication() {
     iframe: scratchFrame.value || null,
     onReady() {
       editorReady.value = true
-      logger.log('Scratch 编辑器就绪')
+      logger.log('Scratch 编辑器就绪（editor-ready 消息已收到）')
+      // 编辑器 HTML 已就绪，但项目可能还在加载中
+      // 不在这里隐藏 loading，等 project-loaded 消息
+    },
+    onVmReady() {
+      logger.log('Scratch VM 初始化完成')
     },
     onProjectChanged() {
       isDirty.value = true
@@ -274,14 +279,26 @@ function setupEditorCommunication() {
       handleSb3AutoSave(base64Data)
     },
     onProjectLoaded() {
-      logger.log('Scratch 项目加载完成')
+      logger.log('Scratch 项目加载完成（project-loaded 消息已收到）')
       loading.value = false
     },
     onError(error) {
       logger.warn('Scratch 错误:', error)
+      // 如果是超时错误，也隐藏 loading
+      if (error.includes('超时')) {
+        loading.value = false
+      }
     }
   })
   scratchBridge.start()
+
+  // 兜底：如果 20 秒后仍未收到 project-loaded，强制隐藏 loading
+  setTimeout(() => {
+    if (loading.value) {
+      logger.warn('Scratch 加载超时（20s），强制隐藏 loading')
+      loading.value = false
+    }
+  }, 20000)
 }
 
 /**

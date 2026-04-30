@@ -125,7 +125,8 @@ async function buildPlayerUrl(): Promise<string> {
   const downloadUrl = `${window.location.origin}/api/v1/project/${props.projectId}/sb3/download`
   const params = new URLSearchParams({
     project_url: downloadUrl,
-    project_name: props.title || ''
+    project_name: props.title || '',
+    _: String(Date.now())  // 缓存破坏
   })
   return `${window.location.origin}/scratch-editor/scratch-player.html?${params.toString()}`
 }
@@ -143,8 +144,29 @@ async function loadPreview() {
 }
 
 function onLoad() {
-  loading.value = false
-  emit('loaded')
+  // iframe HTML 加载完成，但 Scratch VM 可能还未就绪
+  // 等收到 player-ready / project-loaded 消息后再确认加载完成
+  // 兜底：3 秒后如果还没收到消息，也标记为加载完成
+  setTimeout(() => {
+    if (loading.value) {
+      loading.value = false
+      emit('loaded')
+    }
+  }, 3000)
+}
+
+// 监听来自播放器的消息
+function onMessage(event: MessageEvent) {
+  const data = event.data
+  if (!data?.type) return
+  if (data.type === 'project-loaded' || data.type === 'player-ready') {
+    loading.value = false
+    emit('loaded')
+  }
+  if (data.type === 'error') {
+    loading.value = false
+    emit('error', data.error || '加载失败')
+  }
 }
 
 function reload() {
@@ -177,6 +199,7 @@ function onFullscreenChange() {
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  window.addEventListener('message', onMessage)
   if (props.autoLoad && props.projectId) {
     loadPreview()
   }
@@ -184,6 +207,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  window.removeEventListener('message', onMessage)
 })
 
 watch(() => props.projectId, (newId) => {

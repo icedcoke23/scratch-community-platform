@@ -27,36 +27,92 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { margin-top: 16px; font-size: 14px; opacity: 0.8; }
+    .loading-error {
+      margin-top: 12px; font-size: 13px; color: #f38ba8;
+      display: none; text-align: center; max-width: 400px;
+    }
+    .loading-error.show { display: block; }
+    .retry-btn {
+      margin-top: 12px; padding: 8px 24px;
+      background: #3B82F6; color: #fff; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 14px;
+      display: none;
+    }
+    .retry-btn.show { display: inline-block; }
+    .retry-btn:hover { background: #2563EB; }
   </style>
 </head>
 <body>
   <div id="loading">
     <div class="spinner"></div>
     <div class="loading-text">Scratch 编辑器加载中...</div>
+    <div class="loading-error" id="loadingError"></div>
+    <button class="retry-btn" id="retryBtn" onclick="location.reload()">重新加载</button>
   </div>
   <div id="scratch"></div>
 
   <script>
-    // 解析 URL 参数
-    const params = new URLSearchParams(window.location.search);
-    const projectUrl = params.get('project_url') || '';
-    const mode = params.get('mode') || 'editor'; // 'editor' | 'player'
-    const projectId = params.get('project_id') || '';
+    // ==================== 配置 ====================
+    var params = new URLSearchParams(window.location.search);
+    var projectUrl = params.get('project_url') || '';
+    var mode = params.get('mode') || 'editor';
+    var projectId = params.get('project_id') || '';
 
-    // 向父窗口发送消息
+    // ==================== 状态追踪 ====================
+    var vmReady = false;
+    var projectLoaded = false;
+    var editorReadySent = false;
+    var projectLoadedSent = false;
+
+    // ==================== 安全发送消息给父窗口 ====================
     function postToParent(type, data) {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type, ...data }, '*');
+      try {
+        if (window.parent && window.parent !== window) {
+          var msg = Object.assign({ type: type }, data || {});
+          window.parent.postMessage(msg, '*');
+        }
+      } catch (e) {
+        console.warn('[ScratchEditor] postToParent 失败:', e);
       }
     }
 
-    // 隐藏加载动画
+    // ==================== UI 控制 ====================
     function hideLoading() {
-      const el = document.getElementById('loading');
+      var el = document.getElementById('loading');
       if (el) el.classList.add('hidden');
     }
 
-    // Scratch 配置
+    function showError(msg) {
+      var el = document.getElementById('loadingError');
+      var btn = document.getElementById('retryBtn');
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+      if (btn) btn.classList.add('show');
+      var spinner = document.querySelector('.spinner');
+      if (spinner) spinner.style.display = 'none';
+      var text = document.querySelector('.loading-text');
+      if (text) text.textContent = '加载失败';
+    }
+
+    // ==================== 安全调用 window.scratch ====================
+    function safeLoadProject(url, callback) {
+      if (!window.scratch) {
+        console.warn('[ScratchEditor] window.scratch 未就绪，延迟重试...');
+        setTimeout(function() { safeLoadProject(url, callback); }, 500);
+        return;
+      }
+      try {
+        window.scratch.loadProject(url, function() {
+          console.log('[ScratchEditor] 项目加载完成:', url);
+          if (callback) callback();
+        });
+      } catch (e) {
+        console.error('[ScratchEditor] loadProject 异常:', e);
+        showError('项目加载失败: ' + e.message);
+        postToParent('error', { error: e.message });
+      }
+    }
+
+    // ==================== Scratch 配置 ====================
     window.scratchConfig = {
       projectInfo: {
         projectName: params.get('project_name') || '',
@@ -78,31 +134,48 @@
         startButton: { show: true },
         stopButton: { show: true },
       },
+
+      // VM 初始化完成
       handleVmInitialized: function(vm) {
         window.vm = vm;
+        vmReady = true;
+        console.log('[ScratchEditor] VM 初始化完成');
         postToParent('vm-initialized', {});
 
-        vm.on('PROJECT_CHANGED', function() {
-          postToParent('project-changed', {});
-        });
-        vm.on('PROJECT_START', function() {
-          postToParent('project-start', {});
-        });
-        vm.on('PROJECT_STOP', function() {
-          postToParent('project-stop', {});
-        });
+        // 监听项目变更
+        try {
+          vm.on('PROJECT_CHANGED', function() {
+            postToParent('project-changed', {});
+          });
+          vm.on('PROJECT_START', function() {
+            postToParent('project-start', {});
+          });
+          vm.on('PROJECT_STOP', function() {
+            postToParent('project-stop', {});
+          });
+        } catch (e) {
+          console.warn('[ScratchEditor] VM 事件绑定失败:', e);
+        }
       },
+
+      // 项目加载完成（从 URL 加载的项目）
       handleProjectLoaded: function() {
+        projectLoaded = true;
+        console.log('[ScratchEditor] 项目加载完成（handleProjectLoaded）');
         postToParent('project-loaded', {});
         hideLoading();
       },
+
+      // 默认项目加载完成（空白项目）
       handleDefaultProjectLoaded: function() {
+        projectLoaded = true;
+        console.log('[ScratchEditor] 默认项目加载完成');
         postToParent('project-loaded', { isDefault: true });
         hideLoading();
       },
     };
 
-    // 如果是播放器模式，隐藏编辑器 UI
+    // ==================== 播放器模式：隐藏编辑功能 ====================
     if (mode === 'player') {
       window.scratchConfig.menuBar.newButton.show = false;
       window.scratchConfig.menuBar.loadFileButton.show = false;
@@ -111,15 +184,16 @@
       window.scratchConfig.menuBar.helpButton.show = false;
     }
 
-    // 监听来自父窗口的消息
+    // ==================== 监听父窗口消息 ====================
     window.addEventListener('message', function(event) {
-      const data = event.data;
+      var data = event.data;
       if (!data || !data.type) return;
 
       switch (data.type) {
         case 'load-project':
-          if (data.url && window.scratch) {
-            window.scratch.loadProject(data.url, function() {
+          if (data.url) {
+            console.log('[ScratchEditor] 收到 load-project:', data.url);
+            safeLoadProject(data.url, function() {
               postToParent('project-loaded', { url: data.url });
             });
           }
@@ -127,69 +201,110 @@
 
         case 'exportProject':
           if (window.vm) {
-            window.vm.saveProjectSb3().then(function(blob) {
-              var reader = new FileReader();
-              reader.onload = function() {
-                var base64 = reader.result.split(',')[1];
-                postToParent('project-save', { data: base64 });
-              };
-              reader.readAsDataURL(blob);
-            });
+            try {
+              window.vm.saveProjectSb3().then(function(blob) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                  var base64 = reader.result.split(',')[1];
+                  postToParent('project-save', { data: base64 });
+                };
+                reader.readAsDataURL(blob);
+              }).catch(function(e) {
+                console.error('[ScratchEditor] 导出失败:', e);
+                postToParent('error', { error: '导出失败: ' + e.message });
+              });
+            } catch (e) {
+              console.error('[ScratchEditor] exportProject 异常:', e);
+            }
           }
           break;
 
         case 'enter-editor':
-          if (window.scratch) window.scratch.setPlayerOnly(false);
+          if (window.scratch) {
+            try { window.scratch.setPlayerOnly(false); } catch(e) {}
+          }
           break;
 
         case 'enter-player':
-          if (window.scratch) window.scratch.setPlayerOnly(true);
+          if (window.scratch) {
+            try { window.scratch.setPlayerOnly(true); } catch(e) {}
+          }
           break;
 
         case 'set-fullscreen':
           if (window.scratch && data.fullscreen !== undefined) {
-            window.scratch.setFullScreen(data.fullscreen);
+            try { window.scratch.setFullScreen(data.fullscreen); } catch(e) {}
           }
           break;
 
         case 'set-project-name':
           if (window.scratch && data.name) {
-            window.scratch.setProjectName(data.name);
+            try { window.scratch.setProjectName(data.name); } catch(e) {}
           }
           break;
 
         case 'get-project-name':
           if (window.scratch) {
-            var name = window.scratch.getProjectName();
-            postToParent('project-name', { name: name });
+            try {
+              var name = window.scratch.getProjectName();
+              postToParent('project-name', { name: name });
+            } catch(e) {}
           }
           break;
 
         case 'green-flag':
-          if (window.vm) window.vm.greenFlag();
+          if (window.vm) {
+            try { window.vm.greenFlag(); } catch(e) {}
+          }
           break;
 
         case 'stop-all':
-          if (window.vm) window.vm.stopAll();
+          if (window.vm) {
+            try { window.vm.stopAll(); } catch(e) {}
+          }
           break;
       }
     });
 
-    // 加载完成后自动加载项目
+    // ==================== 页面加载后处理 ====================
     window.addEventListener('load', function() {
-      if (projectUrl && window.scratch) {
-        window.scratch.loadProject(projectUrl, function() {
+      // 1. 立即通知父窗口编辑器 HTML 已加载
+      postToParent('editor-ready', { projectId: projectId });
+      editorReadySent = true;
+
+      // 2. 加载项目
+      if (projectUrl) {
+        // 有项目 URL：等待 scratch 就绪后加载
+        safeLoadProject(projectUrl, function() {
           postToParent('project-loaded', { url: projectUrl });
           hideLoading();
         });
       }
-    });
+      // 没有 projectUrl 时，由 handleDefaultProjectLoaded 回调处理隐藏 loading
 
-    // 通知父窗口编辑器已准备好
-    postToParent('editor-ready', { projectId: projectId });
+      // 3. 超时兜底：如果 15 秒后 scratch 仍未就绪，显示错误
+      setTimeout(function() {
+        if (!vmReady) {
+          console.error('[ScratchEditor] Scratch VM 初始化超时');
+          showError('Scratch 编辑器初始化超时，请检查网络连接后重试');
+          postToParent('error', { error: 'Scratch VM 初始化超时' });
+        }
+      }, 15000);
+
+      // 4. 超时兜底：如果 20 秒后项目仍未加载，隐藏 loading（降级处理）
+      setTimeout(function() {
+        if (!projectLoaded) {
+          console.warn('[ScratchEditor] 项目加载超时，强制隐藏 loading');
+          hideLoading();
+          if (!projectLoadedSent) {
+            postToParent('project-loaded', { timeout: true });
+          }
+        }
+      }, 20000);
+    });
   </script>
 
-  <!-- Scratch 核心库 (来自 teaching-open 预编译版本) -->
+  <!-- Scratch 核心库 -->
   <script src="./lib.min.js"></script>
   <script src="./chunks/gui.js"></script>
 </body>
