@@ -44,6 +44,9 @@
         ref="authDialogRef"
         @login-success="onLoginSuccess"
       />
+
+      <!-- 全局浮动创建按钮 -->
+      <CreateProjectFab v-if="userStore.isLoggedIn && route.path !== '/editor'" />
     </div>
   </el-config-provider>
 </template>
@@ -61,6 +64,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import MobileNav from '@/components/MobileNav.vue'
 import AuthDialog from '@/components/AuthDialog.vue'
 import RouteLoadingBar from '@/components/RouteLoadingBar.vue'
+import CreateProjectFab from '@/components/CreateProjectFab.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n } from '@/composables/useI18n'
 import { useNavigation } from '@/composables/useNavigation'

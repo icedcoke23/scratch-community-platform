@@ -31,6 +31,15 @@
         {{ t('feed.title') }}
       </h1>
       <div class="feed-controls">
+        <el-button
+          v-if="userStore.isLoggedIn"
+          type="primary"
+          size="large"
+          class="create-btn"
+          @click="router.push('/editor')"
+        >
+          ✏️ 创建作品
+        </el-button>
         <el-input
           v-model="searchQuery"
           :placeholder="t('common.search') + '...'"
@@ -86,6 +95,7 @@ import { socialApi, statsApi, getAbortController, clearAbortController } from '@
 import { Search } from '@element-plus/icons-vue'
 import type { Project } from '@/types'
 import { useI18n } from '@/composables/useI18n'
+import { useUserStore } from '@/stores/user'
 import ProjectCard from '@/components/ProjectCard.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
@@ -93,6 +103,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 const { t } = useI18n()
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const projects = ref<Project[]>([])
 const sort = ref('latest')
@@ -274,6 +285,21 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.create-btn {
+  font-weight: 700;
+  border-radius: 14px;
+  min-height: 44px;
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple, #8B5CF6));
+  border: none;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
 }
 
 .search-input {

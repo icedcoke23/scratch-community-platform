@@ -19,6 +19,7 @@ declare module 'vue' {
     CollabCursors: typeof import('./components/CollabCursors.vue')['default']
     CollabToolbar: typeof import('./components/CollabToolbar.vue')['default']
     CommentList: typeof import('./components/CommentList.vue')['default']
+    CreateProjectFab: typeof import('./components/CreateProjectFab.vue')['default']
     ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']
@@ -65,6 +66,8 @@ declare module 'vue' {
     RouteLoadingBar: typeof import('./components/RouteLoadingBar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ScratchPreview: typeof import('./components/ScratchPreview.vue')['default']
+    ScratchPreviewDialog: typeof import('./components/ScratchPreviewDialog.vue')['default']
     ShareDialog: typeof import('./components/ShareDialog.vue')['default']
     VirtualList: typeof import('./components/VirtualList.vue')['default']
   }

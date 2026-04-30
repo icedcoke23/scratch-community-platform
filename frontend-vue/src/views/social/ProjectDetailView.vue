@@ -55,6 +55,30 @@
         </div>
       </div>
 
+      <!-- Scratch 实时预览 -->
+      <div class="page-card preview-card">
+        <div class="preview-header">
+          <span class="preview-title">🎮 在线预览</span>
+          <el-button size="small" text type="primary" @click="router.push(`/editor/${project.id}`)">
+            ✏️ 在编辑器中打开
+          </el-button>
+        </div>
+        <ScratchPreview
+          :project-id="project.id"
+          :title="project.title"
+          :author="project.nickname || project.username"
+          :like-count="project.likeCount"
+          :cover-url="project.coverUrl"
+          size="large"
+          :auto-load="true"
+          :show-controls="true"
+          :show-edit-btn="false"
+          :show-info="false"
+          @loaded="onPreviewLoaded"
+          @error="onPreviewError"
+        />
+      </div>
+
       <!-- AI 点评（流式生成中） -->
       <div v-if="isStreaming && streamingContent" class="page-card streaming-card">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px">
@@ -158,6 +182,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getErrorMessage } from '@/utils/error'
 import { timeAgo } from '@/utils'
 import { useI18n } from '@/composables/useI18n'
+import ScratchPreview from '@/components/ScratchPreview.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 
@@ -305,6 +330,14 @@ async function fallbackGenerate() {
     else ElMessage.error(res.msg)
   } catch (e: unknown) { ElMessage.error(getErrorMessage(e)) }
   finally { isStreaming.value = false; aiLoading.value = false; streamingContent.value = '' }
+}
+
+function onPreviewLoaded() {
+  // Scratch 预览加载完成
+}
+
+function onPreviewError(_msg: string) {
+  // Scratch 预览加载失败，静默处理
 }
 
 onMounted(async () => {
@@ -502,6 +535,27 @@ onBeforeUnmount(() => {
   justify-content: center; font-size: 14px; font-weight: 700; color: var(--primary);
 }
 .like-btn { transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Scratch 预览卡片 */
+.preview-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--bg, #f5f5f5);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #1e293b);
+}
 
 /* AI 点评流式 */
 .streaming-card {

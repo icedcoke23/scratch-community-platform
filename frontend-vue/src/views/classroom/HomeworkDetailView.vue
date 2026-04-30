@@ -101,7 +101,8 @@
             <el-table-column label="操作" width="180">
               <template #default="{ row }">
                 <el-button v-if="row.status !== 'graded'" type="primary" size="small" text @click="openGrade(row)">批改</el-button>
-                <el-button v-if="row.projectId" type="info" size="small" text @click="router.push(`/project/${row.projectId}`)">查看作品</el-button>
+                <el-button v-if="row.projectId" type="success" size="small" text @click="previewProject(row.projectId)">预览</el-button>
+                <el-button v-if="row.projectId" type="info" size="small" text @click="router.push(`/project/${row.projectId}`)">详情</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -112,16 +113,22 @@
       <template v-else>
         <div class="page-card" v-if="homework.status === 'published'">
           <div class="section-title">📤 提交作业</div>
-          <el-form inline>
-            <el-form-item label="选择项目">
-              <el-select v-model="submitProjectId" placeholder="选择你的 Scratch 项目" style="width: 300px">
-                <el-option v-for="p in myProjects" :key="p.id" :label="p.title" :value="p.id" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="submitHw" :loading="actionLoading" :disabled="!submitProjectId">提交作业</el-button>
-            </el-form-item>
-          </el-form>
+          <div class="submit-section">
+            <el-form inline>
+              <el-form-item label="选择项目">
+                <el-select v-model="submitProjectId" placeholder="选择你的 Scratch 项目" style="width: 300px">
+                  <el-option v-for="p in myProjects" :key="p.id" :label="p.title" :value="p.id" />
+                </el-select>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="submitHw" :loading="actionLoading" :disabled="!submitProjectId">提交作业</el-button>
+              </el-form-item>
+            </el-form>
+            <div class="create-hint">
+              还没有作品？
+              <el-button type="primary" text @click="router.push('/editor')">✏️ 去创建 Scratch 作品</el-button>
+            </div>
+          </div>
         </div>
 
         <!-- 我的提交状态 -->
@@ -162,6 +169,13 @@
         </template>
       </el-dialog>
     </template>
+
+    <!-- Scratch 预览弹窗 -->
+    <ScratchPreviewDialog
+      v-model="showPreview"
+      :project-id="previewProjectId"
+      title="学生作品预览"
+    />
   </div>
 </template>
 
@@ -175,6 +189,8 @@ import type { Homework, HomeworkSubmission, Project } from '@/types'
 import { ElMessage } from 'element-plus'
 import { useI18n } from '@/composables/useI18n'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
+import ScratchPreview from '@/components/ScratchPreview.vue'
+import ScratchPreviewDialog from '@/components/ScratchPreviewDialog.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -191,6 +207,8 @@ const submitProjectId = ref<number | null>(null)
 const mySubmission = ref<HomeworkSubmission | null>(null)
 const showGradeDialog = ref(false)
 const gradeForm = ref({ submissionId: 0, score: 0, comment: '' })
+const showPreview = ref(false)
+const previewProjectId = ref<number>(0)
 
 const isTeacher = computed(() => userStore.user?.role === 'TEACHER' || userStore.user?.role === 'ADMIN')
 const hwId = Number(route.params.id)
@@ -240,6 +258,11 @@ async function loadMyProjects() {
 function openGrade(sub: HomeworkSubmission) {
   gradeForm.value = { submissionId: sub.id, score: sub.score || 0, comment: sub.comment || '' }
   showGradeDialog.value = true
+}
+
+function previewProject(projectId: number) {
+  previewProjectId.value = projectId
+  showPreview.value = true
 }
 
 async function doGrade() {
@@ -478,5 +501,19 @@ onMounted(async () => {
   }
   :deep(.el-table) { font-size: 12px; }
   :deep(.el-table .cell) { padding: 6px 4px; }
+}
+
+.submit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-hint {
+  font-size: 14px;
+  color: var(--text2, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>

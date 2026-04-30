@@ -15,6 +15,10 @@
       <div v-if="projectType" class="card-badge" :class="`badge-${projectType}`">
         {{ typeIcons[projectType] }} {{ typeLabels[projectType] }}
       </div>
+      <!-- 快速预览按钮 -->
+      <button class="quick-preview-btn" @click.stop="openPreview" title="快速预览">
+        ▶️
+      </button>
     </div>
     <div class="card-body">
       <h3 class="card-title">{{ project.title }}</h3>
@@ -46,13 +50,24 @@
         <span v-for="tag in tagList" :key="tag" class="tag" :class="tagColorClass(tag)">{{ tag }}</span>
       </div>
     </div>
+
+    <!-- 快速预览弹窗 -->
+    <ScratchPreviewDialog
+      v-model="showPreview"
+      :project-id="project.id"
+      :title="project.title"
+      :author="project.nickname || project.username"
+      :likes="project.likeCount"
+      :cover-url="project.coverUrl"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import type { Project } from '@/types'
 import { timeAgo } from '@/utils'
+import ScratchPreviewDialog from './ScratchPreviewDialog.vue'
 
 const props = defineProps<{
   project: Project
@@ -61,6 +76,12 @@ const props = defineProps<{
 defineEmits<{
   click: []
 }>()
+
+const showPreview = ref(false)
+
+function openPreview() {
+  showPreview.value = true
+}
 
 const typeIcons: Record<string, string> = {
   animation: '🎬',
@@ -185,6 +206,40 @@ function tagColorClass(tag: string): string {
   color: #fff;
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 快速预览按钮 */
+.quick-preview-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 5;
+}
+
+.project-card:hover .quick-preview-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.quick-preview-btn:hover {
+  background: var(--primary, #3B82F6);
+  transform: scale(1.15) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .badge-animation { background: rgba(168, 85, 247, 0.85); }
