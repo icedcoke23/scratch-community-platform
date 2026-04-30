@@ -250,60 +250,89 @@ onMounted(loadDashboard)
 
 <style scoped>
 .dashboard-page {
-  max-width: 1024px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
   background: var(--card, #fff);
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: 20px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  border-left: 4px solid var(--accent);
-  transition: all 0.2s ease;
+  gap: 16px;
+  border-left: 5px solid var(--accent);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--accent), transparent);
+  opacity: 0.1;
+  border-radius: 0 20px 0 100%;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover::before {
+  opacity: 0.15;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.2);
 }
 
 .stat-icon {
-  font-size: 32px;
+  font-size: 40px;
   flex-shrink: 0;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .stat-content {
   flex: 1;
   min-width: 0;
+  z-index: 1;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text, #1a1a2e);
-  line-height: 1.2;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text2, #64748b);
-  margin-top: 2px;
-  font-weight: 500;
+  margin-top: 4px;
+  font-weight: 600;
 }
 
 .stat-sub {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  margin-top: 6px;
+  z-index: 1;
 }
 
 .text-green { color: #22C55E; }
@@ -311,12 +340,27 @@ onMounted(loadDashboard)
 .text-gray { color: #6B7280; }
 
 .section-title {
-  font-weight: 700;
-  font-size: 18px;
-  margin-bottom: 16px;
+  font-weight: 800;
+  font-size: 20px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  color: var(--text);
+}
+
+.page-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.page-card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
 }
 
 .ratio-grid {
@@ -358,33 +402,41 @@ onMounted(loadDashboard)
 
 .quick-nav {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .nav-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 20px 16px;
   background: var(--bg, #f5f5f5);
-  border-radius: 12px;
+  border-radius: 16px;
   text-decoration: none;
   color: var(--text, #1a1a2e);
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid transparent;
 }
 
 .nav-item:hover {
-  background: var(--primary, #3B82F6);
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
   color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+  border-color: var(--primary-light);
 }
 
 .nav-icon {
-  font-size: 20px;
+  font-size: 32px;
+  transition: transform 0.3s ease;
+}
+
+.nav-item:hover .nav-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .chart-grid {
