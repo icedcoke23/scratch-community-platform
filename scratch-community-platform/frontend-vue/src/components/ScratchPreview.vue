@@ -1,31 +1,29 @@
 <template>
   <div class="scratch-preview" :class="[`size-${size}`, { 'is-fullscreen': isFullscreen }]">
     <div class="preview-wrapper" ref="wrapperRef">
+      <div v-if="!loaded" class="preview-placeholder" @click="loadPreview">
+        <div class="placeholder-content">
+          <span class="placeholder-icon">🎮</span>
+          <span class="placeholder-text">{{ title || 'Scratch 项目预览' }}</span>
+          <span class="placeholder-hint" v-if="showPlayHint">点击加载预览</span>
+        </div>
+        <img v-if="coverUrl" :src="coverUrl" class="cover-img" :alt="title" />
+      </div>
       <iframe
         v-if="loaded"
         ref="iframeRef"
         :src="playerUrl"
         class="preview-iframe"
-        :allow="allowPermissions"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        @load="onLoad"
+        allow="autoplay; clipboard-read; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
+        @load="onIframeLoad"
       />
-      <div v-else class="preview-placeholder" @click="loadPreview">
-        <div class="placeholder-content">
-          <span class="placeholder-icon">🎮</span>
-          <span class="placeholder-text">{{ placeholderText }}</span>
-          <span class="placeholder-hint" v-if="showPlayHint">点击加载预览</span>
-        </div>
-        <img v-if="coverUrl" :src="coverUrl" class="cover-img" :alt="title" />
-      </div>
-
       <div v-if="loading" class="preview-loading">
-        <div class="loading-spinner" />
-        <span>加载中...</span>
+          <div class="loading-spinner" />
+          <span>加载中...</span>
       </div>
-
-      <button v-if="loaded && showControls" class="ctrl-btn fullscreen-btn" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
-        {{ isFullscreen ? '✕' : '⛶' }}
+      <button v-if="loaded && showControls" class="ctrl-btn fullscreen-btn" @click="toggleFullscreen">
+        {{ isFullscreen ? '退出' : '全屏' }}
       </button>
       <button v-if="loaded && showControls && showEditBtn" class="ctrl-btn edit-btn" @click="goToEditor">
         ✏️ 编辑
@@ -34,7 +32,6 @@
         🔄
       </button>
     </div>
-
     <div v-if="showInfo && title" class="preview-info">
       <div class="info-title">{{ title }}</div>
       <div class="info-meta" v-if="author || likeCount !== undefined">
@@ -46,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { buildPlayerUrl, getDownloadUrl } from '@/utils/turbowarpConfig'
 
@@ -61,7 +58,6 @@ const props = withDefaults(defineProps<{
   showControls?: boolean
   showEditBtn?: boolean
   showInfo?: boolean
-  placeholderText?: string
   showPlayHint?: boolean
 }>(), {
   size: 'medium',
@@ -69,14 +65,8 @@ const props = withDefaults(defineProps<{
   showControls: true,
   showEditBtn: true,
   showInfo: false,
-  placeholderText: 'Scratch 项目',
   showPlayHint: true
 })
-
-const emit = defineEmits<{
-  loaded: []
-  error: [msg: string]
-}>()
 
 const router = useRouter()
 
@@ -88,32 +78,23 @@ const loading = ref(false)
 const isFullscreen = ref(false)
 
 const playerUrl = ref('')
-const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 
 async function loadPreview() {
   if (!props.projectId) return
 
   loading.value = true
-
-  try {
-    const downloadUrl = getDownloadUrl(props.projectId)
-    playerUrl.value = buildPlayerUrl(downloadUrl, true)
-    loaded.value = true
-  } catch (e) {
-    loading.value = false
-    emit('error', '加载预览失败')
-  }
+  const downloadUrl = getDownloadUrl(props.projectId)
+  playerUrl.value = buildPlayerUrl(downloadUrl)
+  loaded.value = true
 }
 
-function onLoad() {
+function onIframeLoad() {
   loading.value = false
-  emit('loaded')
 }
 
 function reload() {
-  if (iframeRef.value) {
-    loading.value = true
-    iframeRef.value.src = iframeRef.value.src
+  if (iframeRef.value?.contentWindow?.location) {
+    iframeRef.value.contentWindow.location.reload()
   }
 }
 
@@ -164,12 +145,12 @@ watch(() => props.projectId, (newId) => {
   border-radius: 16px;
   overflow: hidden;
   background: #1e1e2e;
-  border: 2px solid var(--border, #e2e8f0);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 
 .scratch-preview:hover {
-  border-color: var(--primary-light, #60a5fa);
+  border-color: #3B82F6;
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
 }
 
@@ -198,16 +179,7 @@ watch(() => props.projectId, (newId) => {
   justify-content: center;
   cursor: pointer;
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  transition: all 0.3s ease;
-}
-
-.preview-placeholder:hover {
-  filter: brightness(1.1);
-}
-
-.preview-placeholder:hover .placeholder-icon {
-  transform: scale(1.2);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .cover-img {
@@ -231,8 +203,6 @@ watch(() => props.projectId, (newId) => {
 
 .placeholder-icon {
   font-size: 48px;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
 }
 
 .placeholder-text {
@@ -268,7 +238,7 @@ watch(() => props.projectId, (newId) => {
   width: 32px;
   height: 32px;
   border: 3px solid rgba(255,255,255,0.2);
-  border-top-color: var(--primary, #3B82F6);
+  border-top-color: #3B82F6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -307,17 +277,14 @@ watch(() => props.projectId, (newId) => {
 
 .preview-info {
   padding: 12px 16px;
-  background: var(--card, #fff);
-  border-top: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
 }
 
 .info-title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--text, #1e293b);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #1e293b;
 }
 
 .info-meta {
@@ -325,7 +292,7 @@ watch(() => props.projectId, (newId) => {
   gap: 12px;
   margin-top: 4px;
   font-size: 13px;
-  color: var(--text2, #64748b);
+  color: #64748b;
 }
 
 .info-likes {

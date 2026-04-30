@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scratch 播放器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #app { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    const projectUrl = getQueryParam('project_url');
+
+    let turboWarpUrl = 'https://turbowarp.org/';
+    if (projectUrl) {
+      turboWarpUrl += '?project_url=' + encodeURIComponent(projectUrl);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.setAttribute('allow', 'autoplay; clipboard-read; clipboard-write');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-downloads');
+    iframe.src = turboWarpUrl;
+
+    window.addEventListener('message', function(event) {
+      if (event.source === iframe.contentWindow) {
+        window.parent.postMessage(event.data, '*');
+      } else if (event.source === window.parent) {
+        iframe.contentWindow.postMessage(event.data, '*');
+      }
+    });
+
+    document.getElementById('app').appendChild(iframe);
+
+    setTimeout(() => {
+      window.parent.postMessage({ type: 'iframe-ready' }, '*');
+    }, 500);
+  </script>
+</body>
+</html>

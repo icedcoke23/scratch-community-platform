@@ -1,0 +1,19 @@
+{
+  "name": "scratch-community-platform",
+  "version": "1.0.0",
+  "description": "Scratch Community Platform with TurboWarp Integration",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd frontend-vue && npm run dev",
+    "build": "cd frontend-vue && npm run build",
+    "build:turbowarp": "cd scripts && ./build-turbowarp.sh",
+    "clean": "rm -rf frontend-vue/node_modules frontend-vue/dist"
+  },
+  "keywords": [
+    "scratch",
+    "turbowarp",
+    "vue3"
+  ],
+  "author": "",
+  "license": "MIT"
+}

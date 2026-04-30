@@ -4,66 +4,49 @@
       <div class="toolbar-left">
         <el-button @click="goBack" text>
           <el-icon><ArrowLeft /></el-icon>
-          {{ t('common.back') }}
+          返回
         </el-button>
         <el-divider direction="vertical" />
         <el-input
           v-model="projectTitle"
           class="title-input"
-          :placeholder="t('editor.title')"
-          :maxlength="50"
-          @blur="saveTitle"
+          placeholder="项目标题"
+          maxlength="50"
         />
-        <el-tag v-if="isDirty" type="warning" size="small">{{ t('editor.unsaved') }}</el-tag>
-        <el-tag v-else type="success" size="small">{{ t('editor.saved') }}</el-tag>
-        <el-tag v-if="!isVMReady" type="info" size="small">加载中...</el-tag>
+        <el-tag v-if="project?.status === 'draft'" class="status-draft">草稿</el-tag>
+        <el-tag v-else type="success">已发布</el-tag>
       </div>
       <div class="toolbar-right">
         <el-button-group>
-          <el-button @click="toggleMode" :type="isEditor ? 'primary' : 'default'">
-            <el-icon><Edit /></el-icon>
-            {{ isEditor ? t('editor.editMode') : t('editor.previewMode') }}
-          </el-button>
-          <el-button @click="fullscreen" text>
+          <el-button @click="fullscreen">
             <el-icon><FullScreen /></el-icon>
+            全屏
           </el-button>
         </el-button-group>
         <el-button type="primary" @click="saveProject" :loading="saving">
           <el-icon><Check /></el-icon>
-          {{ t('editor.save') }}
+          保存
         </el-button>
         <el-button @click="publishProject" :loading="publishing" v-if="project?.status === 'draft'">
-          {{ t('editor.publish') }}
+          发布
         </el-button>
         <el-upload
           :show-file-list="false"
           :before-upload="handleSb3Import"
           accept=".sb3"
         >
-          <el-button text>
+          <el-button>导入
             <el-icon><Upload /></el-icon>
-            {{ t('editor.import') }}
+            导入
           </el-button>
         </el-upload>
-        <el-dropdown @command="handleExport">
-          <el-button text>
-            {{ t('editor.export') }}
-            <el-icon><Download /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="sb3">{{ t('editor.exportSb3') }}</el-dropdown-item>
-              <el-dropdown-item command="image">{{ t('editor.exportImage') }}</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
       </div>
     </div>
     <div class="editor-container" ref="editorContainer">
       <div v-if="loading" class="editor-loading">
         <el-icon class="loading-icon"><Loading /></el-icon>
-        <p>{{ t('editor.loading') }}</p>
-        <p class="loading-hint">{{ t('editor.loadingHint') }}</p>
+        <p>正在加载编辑器...</p>
+        <p class="loading-hint">首次加载可能需要 3-5 秒</p>
       </div>
       <iframe
         ref="scratchFrame"
@@ -72,39 +55,9 @@
         :class="{ 'fullscreen': isFullscreen }"
         @load="onIframeLoad"
         allow="clipboard-read; clipboard-write"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads"
       />
     </div>
-    <el-drawer v-model="showInfo" :title="t('editor.projectInfo')" size="360px">
-      <el-form label-position="top">
-        <el-form-item :label="t('editor.title')">
-          <el-input v-model="projectTitle" :maxlength="50" />
-        </el-form-item>
-        <el-form-item :label="t('editor.description')">
-          <el-input v-model="projectDescription" type="textarea" :rows="3" :maxlength="500" />
-        </el-form-item>
-        <el-form-item :label="t('editor.tags')">
-          <el-input v-model="projectTags" :placeholder="t('editor.tagsPlaceholder')" />
-        </el-form-item>
-        <el-form-item v-if="project">
-          <el-descriptions :column="1" border size="small">
-            <el-descriptions-item :label="t('editor.blockCount')">{{ project.blockCount ?? 0 }}</el-descriptions-item>
-            <el-descriptions-item :label="t('editor.complexity')">{{ project.complexityScore ?? 0 }}</el-descriptions-item>
-            <el-descriptions-item :label="t('common.status')">
-              <el-tag :type="project.status === 'published' ? 'success' : 'info'" size="small">
-                {{ project.status === 'published' ? t('editor.published') : t('editor.draft') }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item :label="t('editor.createdAt')">{{ formatDate(project.createdAt) }}</el-descriptions-item>
-          </el-descriptions>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="saveProject" :loading="saving" style="width: 100%">
-            {{ t('editor.saveChanges') }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-drawer>
   </div>
 </template>
 
@@ -113,56 +66,40 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  ArrowLeft, Edit, FullScreen, Check, Download, Loading, Upload
+  ArrowLeft, FullScreen, Check, Loading, Upload
 } from '@element-plus/icons-vue'
-import { projectApi } from '@/api'
-import { useUserStore } from '@/stores/user'
-import { useI18n } from '@/composables'
-import { createScratchBridge, type ScratchBridge } from '@/utils/scratchBridge'
-import { createLogger } from '@/utils/logger'
-import { twConfig, buildEditorUrl, getDownloadUrl } from '@/utils/turbowarpConfig'
-import type { ProjectDetail } from '@/types'
-
-const { t } = useI18n()
-const logger = createLogger('Editor')
-defineOptions({ name: 'ScratchEditorView' })
+import { projectApi, type ProjectDetail } from '@/api'
+import { createScratchBridge } from '@/utils/scratchBridge'
+import { buildEditorUrl, getDownloadUrl } from '@/utils/turbowarpConfig'
 
 const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
 
 const loading = ref(true)
 const saving = ref(false)
 const publishing = ref(false)
-const isDirty = ref(false)
 const isFullscreen = ref(false)
-const showInfo = ref(false)
-const isEditor = ref(true)
-const autoSaving = ref(false)
-const isVMReady = ref(false)
-
 const project = ref<ProjectDetail | null>(null)
-const projectTitle = ref('')
-const projectDescription = ref('')
-const projectTags = ref('')
-
+const projectTitle = ref('新项目')
 const scratchFrame = ref<HTMLIFrameElement>()
 const editorContainer = ref<HTMLDivElement>()
-
-let autoSaveTimer: ReturnType<typeof setInterval> | null = null
-const AUTO_SAVE_INTERVAL = 60000
-
-let scratchBridge: ScratchBridge | null = null
+const bridge = ref<ReturnType<typeof createScratchBridge>>()
 
 const isNewProject = computed(() => !route.params.id || route.params.id === 'new')
 
 const editorUrl = computed(() => {
+  if (isNewProject.value) {
+    return buildEditorUrl()
+  }
+  if (project.value?.id) {
+    const url = getDownloadUrl(project.value.id)
+    return buildEditorUrl(url)
+  }
   return buildEditorUrl()
 })
 
 async function loadProject() {
   if (isNewProject.value) {
-    projectTitle.value = t('editor.importedProject')
     loading.value = false
     return
   }
@@ -171,12 +108,10 @@ async function loadProject() {
     const res = await projectApi.getDetail(Number(route.params.id))
     if (res.code === 0 && res.data) {
       project.value = res.data
-      projectTitle.value = res.data.title
-      projectDescription.value = res.data.description || ''
-      projectTags.value = res.data.tags || ''
+      projectTitle.value = res.data.title || '新项目'
     }
   } catch (e) {
-    ElMessage.error(t('editor.loadFailed'))
+    ElMessage.error('加载项目失败')
   } finally {
     loading.value = false
   }
@@ -184,83 +119,13 @@ async function loadProject() {
 
 function onIframeLoad() {
   loading.value = false
-  logger.log('编辑器 iframe 加载完成')
-  setupEditorCommunication()
-}
-
-function setupEditorCommunication() {
-  scratchBridge?.destroy()
-
-  scratchBridge = createScratchBridge({
+  bridge.value = createScratchBridge({
     iframe: scratchFrame.value || null,
-    onVmReady(vmId) {
-      logger.log('VM 初始化完成:', vmId)
-      isVMReady.value = true
-
-      if (project.value?.sb3Url) {
-        const downloadUrl = getDownloadUrl(project.value.id)
-        logger.log('正在加载项目:', downloadUrl)
-        scratchBridge?.loadProject(downloadUrl).catch((err) => {
-          logger.warn('加载项目失败:', err)
-        })
-      }
-    },
-    onProjectChanged() {
-      isDirty.value = true
-      logger.log('项目已变更')
-    },
-    onProjectSave(base64Data) {
-      handleSb3AutoSave(base64Data)
-    },
-    onError(error) {
-      logger.warn('Scratch 错误:', error)
-      ElMessage.warning(error)
-    },
-    onEditorMode() {
-      isEditor.value = true
-    },
-    onPlayerMode() {
-      isEditor.value = false
+    onReady: () => {
+      console.log('TurboWarp 准备就绪')
     }
   })
-
-  scratchBridge.start()
-}
-
-async function handleSb3AutoSave(base64Data: string) {
-  if (!project.value || autoSaving.value) return
-
-  try {
-    autoSaving.value = true
-    const response = await fetch(`/api/v1/project/${project.value.id}/sb3/auto-save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({ data: base64Data })
-    })
-    const res = await response.json()
-    if (res.code === 0) {
-      logger.log('sb3 自动保存成功')
-    } else {
-      logger.warn('sb3 自动保存失败:', res.msg)
-    }
-  } catch (e) {
-    logger.warn('sb3 自动保存异常:', e)
-  } finally {
-    autoSaving.value = false
-  }
-}
-
-function requestProjectExport() {
-  if (!scratchBridge?.isVMReady()) {
-    logger.warn('VM 未就绪，无法导出')
-    return
-  }
-  scratchBridge.exportProject().catch((err) => {
-    logger.warn('导出失败:', err)
-  })
+  bridge.value.start()
 }
 
 async function saveProject() {
@@ -269,16 +134,15 @@ async function saveProject() {
       saving.value = true
       const res = await projectApi.create({
         title: projectTitle.value,
-        description: projectDescription.value,
-        tags: projectTags.value
+        description: ''
       })
       if (res.code === 0 && res.data) {
         project.value = res.data as unknown as ProjectDetail
-        ElMessage.success(t('editor.projectCreated'))
+        ElMessage.success('项目创建成功')
         router.replace(`/editor/${res.data.id}`)
       }
     } catch (e) {
-      ElMessage.error(t('editor.createFailed'))
+      ElMessage.error('创建失败')
     } finally {
       saving.value = false
     }
@@ -289,51 +153,73 @@ async function saveProject() {
 
   try {
     saving.value = true
-    requestProjectExport()
     await projectApi.update(project.value.id, {
       title: projectTitle.value,
-      description: projectDescription.value,
-      tags: projectTags.value
+      description: ''
     })
-    isDirty.value = false
-    ElMessage.success(t('editor.savedMsg'))
+    ElMessage.success('保存成功')
   } catch (e) {
-    ElMessage.error(t('editor.saveFailed'))
+    ElMessage.error('保存失败')
   } finally {
     saving.value = false
-  }
-}
-
-function saveTitle() {
-  if (project.value && project.value.title !== projectTitle.value) {
-    isDirty.value = true
   }
 }
 
 async function publishProject() {
   if (!project.value) return
   try {
-    await ElMessageBox.confirm(t('editor.publishConfirm'), t('editor.publishTitle'))
+    await ElMessageBox.confirm('确定要发布这个项目吗？', '发布确认')
     publishing.value = true
-    requestProjectExport()
     await projectApi.publish(project.value.id)
     project.value.status = 'published'
-    ElMessage.success(t('editor.publishedMsg'))
+    ElMessage.success('发布成功')
   } catch (e) {
-    if (e !== 'cancel') ElMessage.error(t('editor.publishFailed'))
+    // 用户取消或出错
   } finally {
     publishing.value = false
   }
 }
 
-function toggleMode() {
-  if (!scratchBridge?.isVMReady()) return
-
-  if (isEditor.value) {
-    scratchBridge.enterPlayer()
-  } else {
-    scratchBridge.enterEditor()
+async function handleSb3Import(file: File) {
+  if (isNewProject.value && !project.value) {
+    try {
+      saving.value = true
+      const res = await projectApi.create({
+        title: projectTitle.value,
+        description: ''
+      })
+      if (res.code === 0 && res.data) {
+        project.value = res.data as unknown as ProjectDetail
+        router.replace(`/editor/${res.data.id}`)
+      }
+    } catch (e) {
+      ElMessage.error('创建失败')
+      saving.value = false
+      return false
+    }
   }
+
+  if (!project.value) {
+    ElMessage.error('项目尚未准备好')
+    return false
+  }
+
+  try {
+    saving.value = true
+    const uploadRes = await projectApi.uploadSb3(project.value.id, file)
+    if (uploadRes.code === 0) {
+      ElMessage.success('项目导入成功')
+      // 重新加载页面
+      router.go(0)
+    } else {
+      ElMessage.error(uploadRes.msg || '导入失败')
+    }
+  } catch (e) {
+    ElMessage.error('导入 SB3 失败')
+  } finally {
+    saving.value = false
+  }
+  return false
 }
 
 function fullscreen() {
@@ -347,123 +233,22 @@ function fullscreen() {
   }
 }
 
-function handleExport(command: string) {
-  if (command === 'sb3') {
-    requestProjectExport()
-    ElMessage.info(t('editor.exportingSb3'))
-  } else if (command === 'image') {
-    ElMessage.info(t('editor.imageExportWip'))
-  }
-}
-
-async function handleSb3Import(file: File) {
-  try {
-    if (isNewProject.value && !project.value) {
-      saving.value = true
-      const res = await projectApi.create({
-        title: projectTitle.value || t('editor.importedProject'),
-        description: projectDescription.value,
-        tags: projectTags.value
-      })
-      if (res.code === 0 && res.data) {
-        project.value = res.data as unknown as ProjectDetail
-        router.replace(`/editor/${res.data.id}`)
-      } else {
-        ElMessage.error(t('editor.createFailed'))
-        return false
-      }
-      saving.value = false
-    }
-
-    if (!project.value) {
-      ElMessage.error(t('editor.projectNotReady'))
-      return false
-    }
-
-    saving.value = true
-    const uploadRes = await projectApi.uploadSb3(project.value.id, file)
-    if (uploadRes.code === 0) {
-      ElMessage.success(t('editor.importSuccess'))
-      isDirty.value = false
-      if (scratchBridge?.isVMReady()) {
-        const downloadUrl = getDownloadUrl(project.value.id)
-        scratchBridge.loadProject(downloadUrl)
-      }
-    } else {
-      ElMessage.error(uploadRes.msg || t('editor.importFailed'))
-    }
-  } catch (e) {
-    ElMessage.error(t('editor.importSb3Failed'))
-  } finally {
-    saving.value = false
-  }
-  return false
-}
-
 function goBack() {
-  if (isDirty.value) {
-    ElMessageBox.confirm(t('editor.unsavedLeave'), t('confirm.title'), {
-      confirmButtonText: t('editor.leave'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning'
-    }).then(() => {
-      router.back()
-    }).catch(() => {})
-  } else {
-    router.back()
-  }
-}
-
-function formatDate(date?: string) {
-  if (!date) return '-'
-  return new Date(date).toLocaleString('zh-CN')
+  router.back()
 }
 
 function onFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
 }
 
-function handleKeydown(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault()
-    saveProject()
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    e.preventDefault()
-    if (project.value?.status === 'draft') publishProject()
-  }
-  if (e.key === 'F11') {
-    e.preventDefault()
-    fullscreen()
-  }
-  if (e.key === 'Escape' && isFullscreen.value) {
-    fullscreen()
-  }
-}
-
-onBeforeUnmount(() => {
-  scratchBridge?.destroy()
-  document.removeEventListener('fullscreenchange', onFullscreenChange)
-  document.removeEventListener('keydown', handleKeydown)
-  if (autoSaveTimer) {
-    clearInterval(autoSaveTimer)
-    autoSaveTimer = null
-  }
-})
-
 onMounted(() => {
-  logger.log('TurboWarp 配置:', twConfig)
   loadProject()
   document.addEventListener('fullscreenchange', onFullscreenChange)
-  document.addEventListener('keydown', handleKeydown)
+})
 
-  if (!isNewProject.value) {
-    autoSaveTimer = setInterval(() => {
-      if (isDirty.value && project.value) {
-        requestProjectExport()
-      }
-    }, AUTO_SAVE_INTERVAL)
-  }
+onBeforeUnmount(() => {
+  bridge.value?.destroy()
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>
 
@@ -480,8 +265,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   z-index: 10;
   flex-shrink: 0;
 }
@@ -502,16 +287,9 @@ onMounted(() => {
   width: 240px;
 }
 
-.title-input :deep(.el-input__inner) {
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-  background: transparent;
-}
-
-.title-input :deep(.el-input__inner:focus) {
-  background: var(--bg);
-  border-radius: var(--radius-sm);
+.status-draft {
+  background: #f0ad4e;
+  color: #ffffff;
 }
 
 .editor-container {
@@ -564,7 +342,6 @@ onMounted(() => {
     flex-wrap: wrap;
     gap: 4px;
   }
-
   .title-input {
     width: 150px;
   }
