@@ -109,24 +109,25 @@ const playerUrl = ref('')
 const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 
 /**
- * 构建 TurboWarp 播放器 URL
+ * 构建 Scratch 播放器 URL
  *
- * TurboWarp 嵌入文档：https://docs.turbowarp.org/embedding
- * - /embed 页面仅支持 Scratch 项目 ID，不支持 project_url
- * - project_url 参数仅在主页面 turbowarp.org/?project_url=... 生效
- * - project_url 要求目标 URL 支持 CORS (Access-Control-Allow-Origin: *)
+ * 使用本地部署的 Scratch 播放器（基于 scratch-gui player.js 构建）。
+ * 通过 project_url 参数传递 sb3 文件 URL，由本地播放器加载。
  *
- * 方案：使用后端 /api/v1/project/{id}/sb3/download 端点（Nginx 代理加 CORS 头），
- * 通过 turbowarp.org 主页面的 project_url 参数加载 sb3 文件。
- * 添加 is-iframe=true 让 TurboWarp 以精简模式运行。
+ * 比 TurboWarp 方案的优势：
+ * - 同域加载，无 CORS 问题
+ * - 完全自主可控
+ * - 精简 UI，只显示舞台和控制按钮
  */
 async function buildPlayerUrl(): Promise<string> {
   if (!props.projectId) return ''
-  // 使用后端下载端点（Nginx 代理已配置 CORS 头）
+  // 使用后端下载端点（同域，无需 CORS）
   const downloadUrl = `${window.location.origin}/api/v1/project/${props.projectId}/sb3/download`
-  // turbowarp.org 主页面支持 project_url 参数
-  // 使用 #0 确保不加载 Scratch 项目，只加载 project_url 指定的 sb3
-  return `https://turbowarp.org/?project_url=${encodeURIComponent(downloadUrl)}#0`
+  const params = new URLSearchParams({
+    project_url: downloadUrl,
+    project_name: props.title || ''
+  })
+  return `${window.location.origin}/scratch-editor/scratch-player.html?${params.toString()}`
 }
 
 async function loadPreview() {

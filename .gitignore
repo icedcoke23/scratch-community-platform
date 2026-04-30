@@ -43,3 +43,7 @@ application-local.yml
 docs/DEPLOYMENT_CREDENTIALS.md
 # Sensitive files
 DEPLOYMENT_CREDENTIALS.md
+
+# Scratch editor build artifacts (built in CI via scripts/build-scratch-editor.sh)
+.scratch-gui/
+frontend-vue/public/scratch-editor/

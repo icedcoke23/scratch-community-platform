@@ -1,14 +1,15 @@
 /**
- * Scratch VM (TurboWarp) postMessage 通信协议
+ * Scratch VM postMessage 通信协议
  *
- * 支持的消息类型：
- * - 宿主 → Scratch: enter-editor / enter-player / exportProject / load-project
- * - Scratch → 宿主: project-changed / project-save / fullscreen / error
+ * 支持本地 Scratch 编辑器和 TurboWarp 的消息类型：
+ * - 宿主 → Scratch: enter-editor / enter-player / exportProject / load-project / green-flag / stop-all
+ * - Scratch → 宿主: project-changed / project-save / editor-ready / player-ready / vm-initialized / project-loaded
  */
 
 export interface ScratchMessage {
   type: string
   data?: unknown
+  [key: string]: unknown
 }
 
 export interface ScratchProjectData {
@@ -33,10 +34,15 @@ export interface ScratchHostOptions {
   onError?: (error: string) => void
   /** VM 初始化完成回调 */
   onVmReady?: (vm: unknown) => void
+  /** 编辑器/播放器就绪回调 */
+  onReady?: () => void
+  /** 项目加载完成回调 */
+  onProjectLoaded?: () => void
 }
 
 /**
  * Scratch VM 通信管理器
+ * 同时支持本地 Scratch 编辑器和 TurboWarp 的 postMessage 协议
  */
 export class ScratchBridge {
   private iframe: HTMLIFrameElement | null
@@ -64,10 +70,10 @@ export class ScratchBridge {
     this.iframe = iframe
   }
 
-  /** 向 Scratch 发送消息（使用 origin 限制，避免 postMessage 泄露到恶意页面） */
+  /** 向 Scratch 发送消息 */
   private postMessage(message: ScratchMessage) {
-    // 使用 iframe 的 src origin，而非通配符 '*'
-    // 安全改进: 防止恶意页面通过 window.opener 或嵌入的 iframe 接收消息
+    // 安全：使用 iframe 的 src origin，而非通配符 '*'
+    // 本地编辑器使用 window.location.origin
     const targetOrigin = this.iframe?.src
       ? new URL(this.iframe.src).origin
       : window.location.origin
@@ -80,6 +86,7 @@ export class ScratchBridge {
     if (!data?.type) return
 
     switch (data.type) {
+      // === 通用事件 ===
       case 'project-changed':
         this.options.onProjectChanged?.()
         break
@@ -105,8 +112,32 @@ export class ScratchBridge {
         break
       }
 
+      // === 本地 Scratch 编辑器事件 ===
       case 'vm-initialized':
         this.options.onVmReady?.((data as Record<string, unknown>).vm)
+        break
+
+      case 'editor-ready':
+      case 'player-ready':
+        this.options.onReady?.()
+        break
+
+      case 'project-loaded':
+        this.options.onProjectLoaded?.()
+        break
+
+      case 'project-start':
+        // 项目开始运行（绿旗）
+        break
+
+      case 'project-stop':
+        // 项目停止
+        break
+
+      // === TurboWarp 兼容事件 ===
+      // TurboWarp 使用的事件名可能略有不同
+      default:
+        // 静默忽略未知事件
         break
     }
   }
@@ -128,21 +159,41 @@ export class ScratchBridge {
 
   /** 加载项目（通过 URL） */
   loadProject(url: string) {
-    this.postMessage({ type: 'load-project', data: { url } })
+    this.postMessage({ type: 'load-project', url })
+  }
+
+  /** 运行项目（绿旗） */
+  greenFlag() {
+    this.postMessage({ type: 'green-flag' })
+  }
+
+  /** 停止项目 */
+  stopAll() {
+    this.postMessage({ type: 'stop-all' })
+  }
+
+  /** 设置项目名称 */
+  setProjectName(name: string) {
+    this.postMessage({ type: 'set-project-name', name })
+  }
+
+  /** 获取项目名称 */
+  getProjectName() {
+    this.postMessage({ type: 'get-project-name' })
   }
 
   /** 请求全屏 */
   requestFullscreen() {
-    this.postMessage({ type: 'set-fullscreen', data: { fullscreen: true } })
+    this.postMessage({ type: 'set-fullscreen', fullscreen: true })
   }
 
   /** 退出全屏 */
   exitFullscreen() {
-    this.postMessage({ type: 'set-fullscreen', data: { fullscreen: false } })
+    this.postMessage({ type: 'set-fullscreen', fullscreen: false })
   }
 
   /** 导出为 SB3 文件（触发下载） */
-  exportAsFile(filename = 'project.sb3') {
+  exportAsFile(_filename = 'project.sb3') {
     this.exportProject()
     // 文件下载由 onProjectSave 回调处理
   }

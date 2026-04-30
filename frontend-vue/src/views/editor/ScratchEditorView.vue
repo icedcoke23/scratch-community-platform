@@ -144,6 +144,7 @@ const isFullscreen = ref(false)
 const showInfo = ref(false)
 const isEditor = ref(true)
 const autoSaving = ref(false)
+const editorReady = ref(false)
 
 // 项目数据
 const project = ref<ProjectDetail | null>(null)
@@ -168,13 +169,14 @@ const isNewProject = computed(() => !route.params.id || route.params.id === 'new
 /**
  * Scratch 编辑器 URL
  *
- * TurboWarp 嵌入文档：https://docs.turbowarp.org/embedding
- * - /embed 页面仅支持 Scratch 项目 ID，不支持 project_url
- * - project_url 参数仅在 turbowarp.org 主页面生效
- * - /editor 是主页面的编辑器模式（完整积木区/角色区/舞台）
+ * 使用本地部署的 Scratch 编辑器（基于 scratch-gui 构建）。
+ * 通过 project_url 参数传递 sb3 文件 URL，由本地 Scratch 编辑器加载。
  *
- * 方案：使用 turbowarp.org/editor?project_url=<backend_download_url>
- * 后端下载端点通过 Nginx 代理提供 CORS 头。
+ * 比 TurboWarp iframe 方案的优势：
+ * - 完全自主可控，不依赖外部服务
+ * - 可定制 UI（logo/菜单/颜色）
+ * - 支持深度集成（云变量/背包）
+ * - 同域名通信，无需 CORS 处理
  */
 const editorUrl = ref('about:blank')
 
@@ -183,7 +185,8 @@ const editorUrl = ref('about:blank')
  */
 async function loadProject() {
   if (isNewProject.value) {
-    projectTitle.value = t('editor.importedProject')
+    // 新建项目：直接加载空白 Scratch 编辑器，不等待后端请求
+    editorUrl.value = buildLocalEditorUrl('')
     loading.value = false
     return
   }
@@ -196,7 +199,7 @@ async function loadProject() {
       projectDescription.value = res.data.description || ''
       projectTags.value = res.data.tags || ''
 
-      // 构建带 project_url 的编辑器 URL（异步获取 presigned URL）
+      // 构建编辑器 URL
       await buildEditorUrl()
     }
   } catch (e) {
@@ -207,27 +210,43 @@ async function loadProject() {
 }
 
 /**
+ * 构建本地 Scratch 编辑器 URL
+ *
+ * @param sb3Url sb3 文件的下载地址（相对于后端 API）
+ * @returns 完整的编辑器 URL
+ */
+function buildLocalEditorUrl(sb3Url: string): string {
+  const base = `${window.location.origin}/scratch-editor/scratch-editor.html`
+  const params = new URLSearchParams()
+
+  if (sb3Url) {
+    params.set('project_url', sb3Url)
+  }
+
+  if (project.value) {
+    params.set('project_id', String(project.value.id))
+    if (project.value.title) params.set('project_name', project.value.title)
+  }
+
+  const query = params.toString()
+  return query ? `${base}?${query}` : base
+}
+
+/**
  * 构建编辑器 URL
- *
- * 使用 turbowarp.org/editor（完整编辑器）+ project_url 参数加载 sb3 文件。
- * project_url 要求目标 URL 支持 CORS — 通过 Nginx 代理实现。
- *
- * TurboWarp 主页面路由：
- * - turbowarp.org/editor → 完整编辑器（积木区/角色区/舞台）
- * - turbowarp.org/?project_url=... → 从 URL 加载 sb3
- * - 两者组合：turbowarp.org/editor?project_url=...
  */
 async function buildEditorUrl() {
   if (!project.value) return
 
   if (project.value.sb3Url) {
-    // 使用后端下载端点（Nginx 代理已配置 CORS 头）
+    // 有 sb3 文件：构建带 project_url 的编辑器 URL
+    // 使用后端下载端点（Nginx 代理已配置 CORS 头，同域无需 CORS）
     const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
-    editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(downloadUrl)}`
-    logger.log('编辑器 URL:', editorUrl.value)
+    editorUrl.value = buildLocalEditorUrl(downloadUrl)
+    logger.log('编辑器 URL（带项目）:', editorUrl.value)
   } else {
     // 无 sb3 文件：空白编辑器
-    editorUrl.value = 'https://turbowarp.org/editor'
+    editorUrl.value = buildLocalEditorUrl('')
     logger.log('编辑器 URL（空白项目）')
   }
 }
@@ -244,11 +263,19 @@ function setupEditorCommunication() {
 
   scratchBridge = createScratchBridge({
     iframe: scratchFrame.value || null,
+    onReady() {
+      editorReady.value = true
+      logger.log('Scratch 编辑器就绪')
+    },
     onProjectChanged() {
       isDirty.value = true
     },
     onProjectSave(base64Data) {
       handleSb3AutoSave(base64Data)
+    },
+    onProjectLoaded() {
+      logger.log('Scratch 项目加载完成')
+      loading.value = false
     },
     onError(error) {
       logger.warn('Scratch 错误:', error)
@@ -287,7 +314,7 @@ async function handleSb3AutoSave(base64Data: string) {
 }
 
 /**
- * 请求 TurboWarp 导出当前项目数据
+ * 请求 Scratch 导出当前项目数据
  */
 function requestProjectExport() {
   scratchBridge?.exportProject()
@@ -299,14 +326,20 @@ async function saveProject() {
     try {
       saving.value = true
       const res = await projectApi.create({
-        title: projectTitle.value,
+        title: projectTitle.value || t('editor.importedProject'),
         description: projectDescription.value,
         tags: projectTags.value
       })
       if (res.code === 0 && res.data) {
         project.value = res.data as unknown as ProjectDetail
         ElMessage.success(t('editor.projectCreated'))
+        // 替换路由，保留编辑器状态
         router.replace(`/editor/${res.data.id}`)
+        // 保存成功后，重新构建编辑器 URL（带上项目 ID）
+        await buildEditorUrl()
+        if (scratchFrame.value) {
+          scratchFrame.value.src = editorUrl.value
+        }
       }
     } catch (e) {
       ElMessage.error(t('editor.createFailed'))
@@ -584,6 +617,7 @@ onMounted(() => {
   gap: 12px;
   background: #1e1e2e;
   color: #cdd6f4;
+  z-index: 5;
 }
 
 .loading-icon {
