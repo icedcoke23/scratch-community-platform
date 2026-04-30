@@ -136,7 +136,7 @@ const router = createRouter({
           path: '',
           name: 'Admin',
           component: () => import('@/views/admin/AdminView.vue'),
-          meta: { title: '管理后台' }
+          meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true }
         },
         {
           path: 'users',
