@@ -71,4 +71,7 @@ declare module 'vue' {
     ShareDialog: typeof import('./components/ShareDialog.vue')['default']
     VirtualList: typeof import('./components/VirtualList.vue')['default']
   }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+  }
 }
