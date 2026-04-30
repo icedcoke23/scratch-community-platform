@@ -84,12 +84,18 @@ public class PointService {
      */
     @Transactional
     public void onProjectPublished(Long userId, Long projectId) {
-        addPoints(userId, POINTS_PUBLISH_PROJECT, "PUBLISH_PROJECT", "project", projectId, "发布项目");
+        try {
+            addPoints(userId, POINTS_PUBLISH_PROJECT, "PUBLISH_PROJECT", "project", projectId, "发布项目");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.debug("积分已存在，跳过发放：userId={}, projectId={}", userId, projectId);
+        }
     }
 
     /**
      * 收到点赞奖励
-     * @return 实际获得积分（可能为 0，如果达到每日上限）
+     * 
+     * <p>幂等性保护：点赞积分有每日上限，且每个点赞只发放一次。
+     * @return 实际获得积分（可能为 0，如果达到每日上限或已发放）
      */
     @Transactional
     public int onReceiveLike(Long userId, Long projectId) {
@@ -98,26 +104,63 @@ public class PointService {
         if (todayLikePoints >= DAILY_LIKE_POINTS_CAP) {
             return 0;
         }
-        return addPoints(userId, POINTS_RECEIVE_LIKE, "RECEIVE_LIKE", "project", projectId, "收到点赞");
+        try {
+            return addPoints(userId, POINTS_RECEIVE_LIKE, "RECEIVE_LIKE", "project", projectId, "收到点赞");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.debug("点赞积分已存在，跳过发放：userId={}, projectId={}", userId, projectId);
+            return 0;
+        }
     }
 
     /**
      * 判题通过奖励
+     * 
+     * <p>幂等性保护：通过数据库唯一约束 (user_id, type, ref_type, ref_id) 防止重复发放积分。
+     * 如果已存在相同类型的积分记录，直接返回不重复发放。
      */
     @Transactional
     public void onACSubmission(Long userId, Long submissionId) {
-        if (pointLogMapper.countByTypeAndRef(userId, "AC_SUBMISSION", "submission", submissionId) > 0) {
-            return;
+        try {
+            addPoints(userId, POINTS_AC_SUBMISSION, "AC_SUBMISSION", "submission", submissionId, "判题通过");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 唯一约束冲突，说明已经发放过积分，忽略
+            log.debug("积分已存在，跳过发放：userId={}, submissionId={}", userId, submissionId);
         }
-        addPoints(userId, POINTS_AC_SUBMISSION, "AC_SUBMISSION", "submission", submissionId, "判题通过");
     }
 
     /**
      * 完成作业奖励
+     * 
+     * <p>幂等性保护：通过数据库唯一约束防止重复发放。
      */
     @Transactional
     public void onHomeworkComplete(Long userId, Long homeworkId) {
-        addPoints(userId, POINTS_COMPLETE_HOMEWORK, "COMPLETE_HOMEWORK", "homework", homeworkId, "完成作业");
+        try {
+            addPoints(userId, POINTS_COMPLETE_HOMEWORK, "COMPLETE_HOMEWORK", "homework", homeworkId, "完成作业");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.debug("积分已存在，跳过发放：userId={}, homeworkId={}", userId, homeworkId);
+        }
+    }
+
+    /**
+     * 收到点赞奖励
+     * 
+     * <p>幂等性保护：点赞积分有每日上限，且每个点赞只发放一次。
+     * @return 实际获得积分（可能为 0，如果达到每日上限或已发放）
+     */
+    @Transactional
+    public int onReceiveLike(Long userId, Long projectId) {
+        // 检查今日点赞积分是否已达上限
+        int todayLikePoints = crossModuleQuery.getTodayPointsByType(userId, "RECEIVE_LIKE");
+        if (todayLikePoints >= DAILY_LIKE_POINTS_CAP) {
+            return 0;
+        }
+        try {
+            return addPoints(userId, POINTS_RECEIVE_LIKE, "RECEIVE_LIKE", "project", projectId, "收到点赞");
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.debug("点赞积分已存在，跳过发放：userId={}, projectId={}", userId, projectId);
+            return 0;
+        }
     }
 
     /**

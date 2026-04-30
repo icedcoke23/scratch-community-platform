@@ -32,8 +32,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final ObjectMapper objectMapper;
     private final IdempotentInterceptor idempotentInterceptor;
 
-    /** CORS 允许的源（逗号分隔），默认允许 localhost */
-    @Value("${cors.allowed-origins:http://localhost:*,http://localhost:3000}")
+    /** CORS 允许的源（逗号分隔），生产环境请配置具体域名 */
+    @Value("${cors.allowed-origins:http://localhost:*}")
     private String allowedOrigins;
 
     @Override

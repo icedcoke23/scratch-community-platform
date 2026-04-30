@@ -247,15 +247,16 @@ public class JudgeService {
                 log.warn("异步判题第 {} 次异常: submissionId={}, error={}", attempt, submissionId, e.getMessage());
             }
 
-            // 指数退避重试（1s, 2s, 4s）
+            // 指数退避重试（1s, 2s, 4s）- 使用 delayedExecutor 避免阻塞线程
             if (attempt < MAX_RETRIES) {
-                long delayMs = 1000L * (1L << (attempt - 1)); // 指数退避: 1s, 2s, 4s
-                try {
-                    Thread.sleep(delayMs);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                long delayMs = 1000L * (1L << (attempt - 1)); // 指数退避：1s, 2s, 4s
+                final int currentAttempt = attempt;
+                final Long currentSubmissionId = submissionId;
+                final Long currentProblemId = problemId;
+                return CompletableFuture.runAsync(() -> {
+                    log.debug("判题重试延迟 {}ms 后继续，attempt={}", delayMs, currentAttempt);
+                }, CompletableFuture.delayedExecutor(delayMs, java.util.concurrent.TimeUnit.MILLISECONDS))
+                .thenCompose(v -> judgeAsync(currentSubmissionId, currentProblemId));
             }
         }
 

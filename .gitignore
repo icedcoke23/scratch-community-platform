@@ -1,45 +1,51 @@
-# Java
-target/
+```
+# Compiled and build artifacts
 *.class
-*.jar
-*.war
-*.ear
+*.o
+*.obj
+*.out
+*.dll
+*.so
+*.a
+*.exe
 
-# IDE
-.idea/
-*.iml
-.vscode/
-.project
-.classpath
-.settings/
-
-# Node.js
+# Dependencies
 node_modules/
-npm-debug.log*
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.gradle/
+target/
 
-# OS
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Docker volumes
-mysql_data/
-redis_data/
-minio_data/
-prometheus_data/
-grafana_data/
+# Build directories (common in Java projects)
+build/
+dist/
 
-# Playwright
-playwright-report/
-test-results/
-blob-report/
-e2e-results/
-
-# Secrets
-.env
-application-local.yml
-docs/DEPLOYMENT_CREDENTIALS.md
-# Sensitive files
-DEPLOYMENT_CREDENTIALS.md
+# Python virtual environments
+.venv/
+venv/
+```
