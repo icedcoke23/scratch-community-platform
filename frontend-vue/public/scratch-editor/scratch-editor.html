@@ -71,7 +71,7 @@
 
     // ==================== 状态追踪 ====================
     var vmReady = false;
-    var scratchReady = false;  // window.scratch.loadProject 是否可用
+    var scratchReady = false;
     var projectLoaded = false;
     var projectLoadedSent = false;
     var loadAttempts = 0;
@@ -80,13 +80,13 @@
     // ==================== 调试日志 ====================
     function log(msg) {
       var ts = new Date().toISOString().substr(11, 12);
-      var full = '[ScratchEditor ' + ts + '] ' + msg;
+      var full = "[ScratchEditor " + ts + "] " + msg;
       console.log(full);
       if (DEBUG) {
         var el = document.getElementById('debugLog');
         if (el) {
           el.classList.add('show');
-          el.textContent += full + '\n';
+          el.textContent += full + "\n";
           el.scrollTop = el.scrollHeight;
         }
       }
@@ -121,31 +121,172 @@
       if (text) text.textContent = '加载失败';
     }
 
+    // ==================== Scratch 配置 - 完整原版配置 ====================
+    window.scratchConfig = {
+      session: {
+        token: '',
+        username: '',
+      },
+      backpack: {
+        enable: false,
+        api: "",
+      },
+      cloudData: {
+        enable: false,
+        id: "create",
+        api: "",
+      },
+      projectInfo: {
+        projectName: params.get('project_name') || '',
+        authorUsername: '',
+        authorAvatar: './static/avatar.png',
+      },
+      logo: {
+        show: false,
+        url: '',
+        handleClickLogo: function() {},
+      },
+      stageArea: {
+        fullscreenButton: {
+          show: true,
+          handleBeforeSetStageUnFull: function() { return true; },
+          handleBeforeSetStageFull: function() { return true; },
+        },
+        startButton: {
+          show: true,
+          handleBeforeStart: function() { return true; },
+        },
+        stopButton: {
+          show: true,
+          handleBeforeStop: function() { return true; },
+        },
+      },
+      menuBar: {
+        style: { background: 'hsla(215, 100%, 65%, 1)' },
+        languageButton: {
+          show: false,
+          defaultLanguage: 'zh-cn',
+        },
+        newButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        loadFileButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        saveFileButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        turboModeButton: {
+          show: true,
+        },
+        helpButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        myStuff: {
+          show: false,
+          url: '',
+        },
+        userAvatar: {
+          show: false,
+          username: '',
+          avatar: '',
+          handleClick: function() {},
+        },
+        customButtons: [],
+      },
+      blocks: {
+        scale: 0.8,
+        hideCatagorys: [],
+        hideBlocks: [],
+      },
+      handleVmInitialized: function(vm) {
+        window.vm = vm;
+        vmReady = true;
+        log("VM 初始化完毕");
+
+        try {
+          vm.on('PROJECT_CHANGED', function() {
+            postToParent('project-changed', {});
+          });
+          vm.on('PROJECT_START', function() {
+            postToParent('project-start', {});
+          });
+          vm.on('PROJECT_STOP', function() {
+            postToParent('project-stop', {});
+          });
+        } catch (e) {
+          log('VM 事件绑定失败: ' + e.message);
+        }
+
+        postToParent('vm-initialized', {});
+
+        if (projectUrl && !projectLoaded) {
+          log('VM 就绪，开始加载项目...');
+          safeLoadProject(projectUrl);
+        }
+      },
+      handleProjectLoaded: function() {
+        if (projectLoaded) return;
+        projectLoaded = true;
+        log('作品载入完毕');
+        hideLoading();
+        if (!projectLoadedSent) {
+          projectLoadedSent = true;
+          postToParent('project-loaded', {});
+        }
+      },
+      handleDefaultProjectLoaded: function() {
+        log('默认项目加载完成');
+        scratchReady = true;
+
+        if (!projectUrl) {
+          projectLoaded = true;
+          hideLoading();
+          postToParent('project-loaded', { isDefault: true });
+        }
+      },
+      defaultProjectURL: "./static/project.sb3",
+      assets: {
+        assetHost: './static',
+        defaultIndex: {
+          sprites: "./static/json_index/sprites.json",
+          costumes: "./static/json_index/costumes.json",
+          backdrops: "./static/json_index/backdrops.json",
+          sounds: "./static/json_index/sounds.json",
+        },
+        handleBeforeSpriteLibraryOpen: function() { return true; },
+        handleBeforeCostumesLibraryOpen: function() { return true; },
+        handleBeforeBackdropsLibraryOpen: function() { return true; },
+        handleBeforeSoundLibraryOpen: function() { return true; },
+      },
+    };
+
+    // ==================== 播放器模式 ====================
+    if (mode === 'player') {
+      window.scratchConfig.menuBar.style = { display: 'none' };
+      window.scratchConfig.menuBar.newButton.show = false;
+      window.scratchConfig.menuBar.loadFileButton.show = false;
+      window.scratchConfig.menuBar.saveFileButton.show = false;
+      window.scratchConfig.menuBar.turboModeButton.show = false;
+      window.scratchConfig.menuBar.helpButton.show = false;
+      window.scratchConfig.stageArea.scale = Math.min(window.innerWidth / 480, window.innerHeight / 360);
+    }
+
     // ==================== 项目加载 ====================
-    /**
-     * 加载项目 — 双路径策略
-     *
-     * 路径 A（优先）：window.scratch.loadProject(url, callback)
-     *   - lib.min.js 的 React HOC 设置，通过 CustomEvent 桥接到 loadProjectByURL
-     *   - loadProjectByURL 内部 fetch → FileReader → vm.loadProject(buffer)
-     *   - 这是 teaching-open 框架的原生方式
-     *
-     * 路径 B（兜底）：手动 fetch → window.vm.loadProject(buffer)
-     *   - 当 window.scratch.loadProject 不可用时使用
-     *   - 直接调用 VM 的 loadProject 方法
-     */
     function safeLoadProject(url, callback) {
       loadAttempts++;
       log('加载项目 (attempt ' + loadAttempts + '): ' + url);
 
-      // 路径 A：使用 window.scratch.loadProject（原生方式）
       if (window.scratch && typeof window.scratch.loadProject === 'function') {
         log('使用 window.scratch.loadProject（原生路径）');
         try {
           window.scratch.loadProject(url, function(err) {
             if (err) {
               log('window.scratch.loadProject 回调错误: ' + err);
-              // 降级到路径 B
               loadProjectFallback(url, callback);
             } else {
               log('项目加载成功（原生路径）');
@@ -159,14 +300,12 @@
         return;
       }
 
-      // 路径 B：手动 fetch + vm.loadProject
       if (window.vm && typeof window.vm.loadProject === 'function') {
         log('使用 vm.loadProject（兜底路径）');
         loadProjectFallback(url, callback);
         return;
       }
 
-      // 两者都不可用，延迟重试
       if (loadAttempts >= MAX_LOAD_ATTEMPTS) {
         log('超过最大重试次数，放弃加载');
         showError('Scratch 编辑器初始化失败，请刷新页面重试');
@@ -178,9 +317,6 @@
       setTimeout(function() { safeLoadProject(url, callback); }, 500);
     }
 
-    /**
-     * 兜底加载：手动 fetch sb3 → vm.loadProject(buffer)
-     */
     function loadProjectFallback(url, callback) {
       log('fetch sb3: ' + url);
       fetch(url)
@@ -204,95 +340,6 @@
           showError('项目加载失败: ' + e.message);
           postToParent('error', { error: e.message });
         });
-    }
-
-    // ==================== Scratch 配置 ====================
-    window.scratchConfig = {
-      projectInfo: {
-        projectName: params.get('project_name') || '',
-        authorUsername: params.get('author') || '',
-      },
-      logo: { show: false },
-      menuBar: {
-        style: { background: 'hsla(215, 100%, 65%, 1)' },
-        languageButton: { show: true, defaultLanguage: 'zh-cn' },
-        newButton: { show: true },
-        loadFileButton: { show: true },
-        saveFileButton: { show: true },
-        turboModeButton: { show: true },
-        helpButton: { show: true },
-      },
-      blocks: { scale: 1 },
-      stageArea: {
-        fullscreenButton: { show: true },
-        startButton: { show: true },
-        stopButton: { show: true },
-      },
-
-      // VM 初始化完成（lib.min.js 的 HOC 调用）
-      handleVmInitialized: function(vm) {
-        window.vm = vm;
-        vmReady = true;
-        log('VM 初始化完成');
-
-        // 监听项目变更
-        try {
-          vm.on('PROJECT_CHANGED', function() {
-            postToParent('project-changed', {});
-          });
-          vm.on('PROJECT_START', function() {
-            postToParent('project-start', {});
-          });
-          vm.on('PROJECT_STOP', function() {
-            postToParent('project-stop', {});
-          });
-        } catch (e) {
-          log('VM 事件绑定失败: ' + e.message);
-        }
-
-        postToParent('vm-initialized', {});
-
-        // 如果有 projectUrl 且还没加载，立即开始加载
-        if (projectUrl && !projectLoaded) {
-          log('VM 就绪，开始加载项目...');
-          safeLoadProject(projectUrl);
-        }
-      },
-
-      // 项目加载完成
-      handleProjectLoaded: function() {
-        if (projectLoaded) return;  // 防止重复触发
-        projectLoaded = true;
-        log('项目加载完成（handleProjectLoaded）');
-        hideLoading();
-        if (!projectLoadedSent) {
-          projectLoadedSent = true;
-          postToParent('project-loaded', {});
-        }
-      },
-
-      // 默认项目加载完成（空白项目）
-      handleDefaultProjectLoaded: function() {
-        log('默认项目加载完成');
-        scratchReady = true;
-
-        // 如果没有 projectUrl，直接隐藏 loading
-        if (!projectUrl) {
-          projectLoaded = true;
-          hideLoading();
-          postToParent('project-loaded', { isDefault: true });
-        }
-        // 有 projectUrl 时，handleVmInitialized 已经开始加载了
-      },
-    };
-
-    // ==================== 播放器模式 ====================
-    if (mode === 'player') {
-      window.scratchConfig.menuBar.newButton.show = false;
-      window.scratchConfig.menuBar.loadFileButton.show = false;
-      window.scratchConfig.menuBar.saveFileButton.show = false;
-      window.scratchConfig.menuBar.turboModeButton.show = false;
-      window.scratchConfig.menuBar.helpButton.show = false;
     }
 
     // ==================== 监听父窗口消息 ====================
@@ -373,11 +420,8 @@
     // ==================== 页面加载后处理 ====================
     window.addEventListener('load', function() {
       log('页面 load 事件');
-
-      // 通知父窗口编辑器已加载
       postToParent('editor-ready', { projectId: projectId });
 
-      // 超时兜底：15 秒后如果 VM 仍未就绪
       setTimeout(function() {
         if (!vmReady) {
           log('Scratch VM 初始化超时 (15s)');
@@ -386,7 +430,6 @@
         }
       }, 15000);
 
-      // 超时兜底：20 秒后如果项目仍未加载
       setTimeout(function() {
         if (!projectLoaded) {
           log('项目加载超时 (20s)，强制隐藏 loading');
@@ -401,9 +444,7 @@
     });
   </script>
 
-  <!-- Scratch 核心库（VM + React 组件 + HOC） -->
-  <script src="./lib.min.js"></script>
-  <!-- GUI 入口（自动渲染到 #scratch） -->
-  <script src="./chunks/gui.js"></script>
+  <script type="text/javascript" src="lib.min.js"></script>
+  <script type="text/javascript" src="chunks/gui.js"></script>
 </body>
 </html>
