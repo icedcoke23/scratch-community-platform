@@ -56,6 +56,7 @@ defineOptions({ name: 'AdminClassesView' })
 
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { get } from '@/api/request'
 
 const loading = ref(false)
 const classes = ref<any[]>([])
@@ -71,12 +72,10 @@ function formatDateTime(dt: string) {
 async function loadData() {
   loading.value = true
   try {
-    // 使用 fetch 直接调用，因为 classApi 可能没有 admin list 方法
-    const res = await fetch(`/api/v1/class?page=${page.value}&size=20`)
-    const data = await res.json()
-    if (data.code === 0) {
-      classes.value = data.data?.records || []
-      total.value = data.data?.total || 0
+    const res = await get('/class', { page: page.value, size: 20 })
+    if (res.code === 0) {
+      classes.value = res.data?.records || []
+      total.value = res.data?.total || 0
     }
   } catch { /* ignore */ }
   finally { loading.value = false }
