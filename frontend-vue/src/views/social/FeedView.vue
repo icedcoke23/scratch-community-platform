@@ -1,5 +1,13 @@
 <template>
   <div>
+    <!-- 轮播图 -->
+    <Carousel 
+      :slides="carouselSlides" 
+      :autoplay="true" 
+      :interval="6000"
+      @button-click="handleCarouselButtonClick"
+    />
+    
     <!-- 平台统计横幅 -->
     <div v-if="stats" class="stats-banner">
       <div class="stat-highlight">
@@ -57,6 +65,14 @@
           <el-radio-button value="latest">🆕 {{ t('feed.latest') }}</el-radio-button>
           <el-radio-button value="hot">🔥 {{ t('feed.hot') }}</el-radio-button>
         </el-radio-group>
+        <el-button 
+          :type="useEnhancedCard ? 'primary' : 'default'" 
+          size="large" 
+          @click="useEnhancedCard = !useEnhancedCard"
+          class="card-toggle-btn"
+        >
+          {{ useEnhancedCard ? '🎨 新版卡片' : '📦 原版卡片' }}
+        </el-button>
       </div>
     </div>
 
@@ -70,7 +86,8 @@
     <EmptyState v-else-if="projects.length === 0 && !loading" icon="🎨" :text="isSearching ? t('common.empty') : t('feed.empty')" />
 
     <div v-else class="project-grid">
-      <ProjectCard
+      <component
+        :is="useEnhancedCard ? ProjectCardEnhanced : ProjectCard"
         v-for="p in projects"
         :key="p.id"
         :project="p"
@@ -97,8 +114,10 @@ import type { Project } from '@/types'
 import { useI18n } from '@/composables/useI18n'
 import { useUserStore } from '@/stores/user'
 import ProjectCard from '@/components/ProjectCard.vue'
+import ProjectCardEnhanced from '@/components/ProjectCardEnhanced.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
+import Carousel from '@/components/Carousel.vue'
 
 const { t } = useI18n()
 
@@ -110,14 +129,62 @@ const sort = ref('latest')
 const page = ref(1)
 const total = ref(0)
 const hasMore = computed(() => projects.value.length < total.value)
+const useEnhancedCard = ref(false)
 
 // 搜索
 const searchQuery = ref('')
 const lastSearch = ref('')
 const isSearching = ref(false)
 
+// 轮播图数据
+interface CarouselSlide {
+  image: string
+  title: string
+  description: string
+  buttonText?: string
+  link?: string
+}
+
+const carouselSlides = ref<CarouselSlide[]>([
+  {
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=coding%20scratch%20kids%20learning%20programming%20colorful%20fun%20educational%20technology&image_size=landscape_16_9',
+    title: '🎉 欢迎来到 Scratch 社区',
+    description: '在这里，你可以发挥想象力，创造令人惊叹的项目，与全球小创作者一起学习编程！',
+    buttonText: '开始创作',
+    link: '/editor'
+  },
+  {
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=competition%20programming%20contest%20awards%20trophy%20winner%20celebration%20kids%20coding&image_size=landscape_16_9',
+    title: '🏆 编程竞赛火热进行中',
+    description: '参加我们的月度编程竞赛，展示你的创意，赢取丰厚奖励！',
+    buttonText: '立即参赛',
+    link: '/competition'
+  },
+  {
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=classroom%20teacher%20students%20learning%20together%20education%20school%20collaboration&image_size=landscape_16_9',
+    title: '📚 加入学习班级',
+    description: '创建或加入学习班级，与老师和同学们一起学习，共同进步！',
+    buttonText: '探索班级',
+    link: '/class'
+  },
+  {
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=friends%20collaboration%20teamwork%20coding%20together%20happy%20kids%20programming%20group&image_size=landscape_16_9',
+    title: '👥 多人协作编辑',
+    description: '邀请小伙伴一起合作开发项目，实时协作，激发无限创意！',
+    buttonText: '了解更多',
+    link: '/feed'
+  }
+])
+
 // 统计
 const stats = ref<{ totalUsers: number; totalProjects: number; publishedProjects: number } | null>(null)
+
+// 轮播图按钮点击处理
+function handleCarouselButtonClick(slide: CarouselSlide) {
+  if (slide.link && slide.link.startsWith('/')) {
+    router.push(slide.link)
+  }
+}
 
 async function loadFeed(reset = false) {
   if (reset) {
@@ -314,6 +381,17 @@ onUnmounted(() => {
 .sort-group :deep(.el-radio-button__inner) {
   border-radius: 10px;
   font-weight: 600;
+}
+
+.card-toggle-btn {
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .search-hint {
