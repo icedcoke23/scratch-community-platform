@@ -64,10 +64,13 @@ export class ScratchBridge {
     this.iframe = iframe
   }
 
-  /** 向 Scratch 发送消息（同域自托管 TurboWarp，使用当前 origin） */
+  /** 向 Scratch 发送消息（使用 origin 限制，避免 postMessage 泄露到恶意页面） */
   private postMessage(message: ScratchMessage) {
-    // 自托管 TurboWarp 与宿主同域，使用 window.location.origin
-    const targetOrigin = window.location.origin
+    // 使用 iframe 的 src origin，而非通配符 '*'
+    // 安全改进: 防止恶意页面通过 window.opener 或嵌入的 iframe 接收消息
+    const targetOrigin = this.iframe?.src
+      ? new URL(this.iframe.src).origin
+      : window.location.origin
     this.iframe?.contentWindow?.postMessage(message, targetOrigin)
   }
 

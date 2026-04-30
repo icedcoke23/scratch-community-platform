@@ -166,19 +166,15 @@ let scratchBridge: ScratchBridge | null = null
 const isNewProject = computed(() => !route.params.id || route.params.id === 'new')
 
 /**
- * Scratch 编辑器 URL（本地自托管 TurboWarp）
+ * Scratch 编辑器 URL
  *
- * 使用本地构建的 TurboWarp 替代外部 turbowarp.org iframe 嵌入。
- * 优势：
- * - 无外部依赖，完全自主可控
- * - 同域加载，无 CORS 限制
- * - 可深度定制编辑器
- * - postMessage 通信更可靠
+ * TurboWarp 嵌入文档：https://docs.turbowarp.org/embedding
+ * - /embed 页面仅支持 Scratch 项目 ID，不支持 project_url
+ * - project_url 参数仅在 turbowarp.org 主页面生效
+ * - /editor 是主页面的编辑器模式（完整积木区/角色区/舞台）
  *
- * 路由说明：
- * - /turbowarp/editor.html → 完整编辑器（积木区/角色区/舞台）
- * - /turbowarp/editor.html?project_url=<url> → 从 URL 加载 sb3 文件
- * - /turbowarp/index.html → 播放器模式
+ * 方案：使用 turbowarp.org/editor?project_url=<backend_download_url>
+ * 后端下载端点通过 Nginx 代理提供 CORS 头。
  */
 const editorUrl = ref('about:blank')
 
@@ -188,8 +184,6 @@ const editorUrl = ref('about:blank')
 async function loadProject() {
   if (isNewProject.value) {
     projectTitle.value = t('editor.importedProject')
-    // 新项目直接加载空白 TurboWarp 编辑器，而非停留在预览界面
-    editorUrl.value = '/turbowarp/editor.html'
     loading.value = false
     return
   }
@@ -213,22 +207,27 @@ async function loadProject() {
 }
 
 /**
- * 构建编辑器 URL（本地自托管 TurboWarp）
+ * 构建编辑器 URL
  *
- * 使用本地 /turbowarp/editor.html 替代外部 turbowarp.org。
- * project_url 参数指向后端 sb3 下载端点，同域无 CORS 问题。
+ * 使用 turbowarp.org/editor（完整编辑器）+ project_url 参数加载 sb3 文件。
+ * project_url 要求目标 URL 支持 CORS — 通过 Nginx 代理实现。
+ *
+ * TurboWarp 主页面路由：
+ * - turbowarp.org/editor → 完整编辑器（积木区/角色区/舞台）
+ * - turbowarp.org/?project_url=... → 从 URL 加载 sb3
+ * - 两者组合：turbowarp.org/editor?project_url=...
  */
 async function buildEditorUrl() {
   if (!project.value) return
 
   if (project.value.sb3Url) {
-    // 使用后端下载端点（同域，无需 CORS）
+    // 使用后端下载端点（Nginx 代理已配置 CORS 头）
     const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
-    editorUrl.value = `/turbowarp/editor.html?project_url=${encodeURIComponent(downloadUrl)}`
+    editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(downloadUrl)}`
     logger.log('编辑器 URL:', editorUrl.value)
   } else {
     // 无 sb3 文件：空白编辑器
-    editorUrl.value = '/turbowarp/editor.html'
+    editorUrl.value = 'https://turbowarp.org/editor'
     logger.log('编辑器 URL（空白项目）')
   }
 }
