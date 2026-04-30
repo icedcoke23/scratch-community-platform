@@ -47,12 +47,15 @@
     var projectUrl = params.get('project_url') || '';
     var vmReady = false;
     var projectLoaded = false;
+    var loadAttempts = 0;
+    var MAX_LOAD_ATTEMPTS = 10;
+
+    function log(msg) { console.log('[ScratchPlayer] ' + msg); }
 
     function postToParent(type, data) {
       try {
         if (window.parent && window.parent !== window) {
-          var msg = Object.assign({ type: type }, data || {});
-          window.parent.postMessage(msg, '*');
+          window.parent.postMessage(Object.assign({ type: type }, data || {}), '*');
         }
       } catch (e) {}
     }
@@ -71,28 +74,69 @@
       if (text) text.textContent = '加载失败';
     }
 
+    /**
+     * 加载项目 — 双路径策略
+     * 路径 A: window.scratch.loadProject(url, callback) — 原生方式
+     * 路径 B: fetch → vm.loadProject(buffer) — 兜底方式
+     */
     function safeLoadProject(url, callback) {
-      // Scratch VM 没有 window.scratch.loadProject，需要 fetch + vm.loadProject
-      if (!window.vm) {
-        setTimeout(function() { safeLoadProject(url, callback); }, 500);
+      loadAttempts++;
+      log('加载项目 (attempt ' + loadAttempts + '): ' + url);
+
+      // 路径 A：window.scratch.loadProject
+      if (window.scratch && typeof window.scratch.loadProject === 'function') {
+        log('使用 window.scratch.loadProject');
+        try {
+          window.scratch.loadProject(url, function(err) {
+            if (err) {
+              log('原生路径错误: ' + err);
+              loadProjectFallback(url, callback);
+            } else {
+              log('项目加载成功（原生路径）');
+              if (callback) callback();
+            }
+          });
+        } catch (e) {
+          log('原生路径异常: ' + e.message);
+          loadProjectFallback(url, callback);
+        }
         return;
       }
-      console.log('[ScratchPlayer] 开始加载项目:', url);
+
+      // 路径 B：vm.loadProject
+      if (window.vm && typeof window.vm.loadProject === 'function') {
+        log('使用 vm.loadProject（兜底）');
+        loadProjectFallback(url, callback);
+        return;
+      }
+
+      // 都不可用，重试
+      if (loadAttempts >= MAX_LOAD_ATTEMPTS) {
+        log('超过最大重试次数');
+        showError('播放器初始化失败，请刷新重试');
+        postToParent('error', { error: '播放器初始化超时' });
+        return;
+      }
+      setTimeout(function() { safeLoadProject(url, callback); }, 500);
+    }
+
+    function loadProjectFallback(url, callback) {
+      log('fetch sb3: ' + url);
       fetch(url)
-        .then(function(response) {
-          if (!response.ok) throw new Error('下载项目失败: HTTP ' + response.status);
-          return response.arrayBuffer();
-        })
-        .then(function(buffer) {
-          console.log('[ScratchPlayer] sb3 下载完成，大小:', buffer.byteLength, 'bytes');
-          return window.vm.loadProject(buffer);
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(function(buf) {
+          log('sb3 下载完成: ' + buf.byteLength + ' bytes');
+          return window.vm.loadProject(buf);
         })
         .then(function() {
-          console.log('[ScratchPlayer] 项目加载完成');
+          log('项目加载成功（兜底路径）');
+          projectLoaded = true;
+          hideLoading();
+          postToParent('project-loaded', { url: url });
           if (callback) callback();
         })
         .catch(function(e) {
-          console.error('[ScratchPlayer] loadProject 异常:', e);
+          log('加载失败: ' + e.message);
           showError('项目加载失败: ' + e.message);
           postToParent('error', { error: e.message });
         });
@@ -128,21 +172,34 @@
       handleVmInitialized: function(vm) {
         window.vm = vm;
         vmReady = true;
+        log('VM 初始化完成');
         postToParent('vm-initialized', {});
+
         // 自动运行
         setTimeout(function() {
           try { vm.greenFlag(); } catch(e) {}
         }, 500);
+
+        // 如果有 projectUrl，开始加载
+        if (projectUrl && !projectLoaded) {
+          log('VM 就绪，开始加载项目...');
+          safeLoadProject(projectUrl);
+        }
       },
       handleProjectLoaded: function() {
+        if (projectLoaded) return;
         projectLoaded = true;
-        postToParent('project-loaded', {});
+        log('项目加载完成');
         hideLoading();
+        postToParent('project-loaded', {});
       },
       handleDefaultProjectLoaded: function() {
-        projectLoaded = true;
-        postToParent('project-loaded', { isDefault: true });
-        hideLoading();
+        log('默认项目加载完成');
+        if (!projectUrl) {
+          projectLoaded = true;
+          hideLoading();
+          postToParent('project-loaded', { isDefault: true });
+        }
       },
     };
 
@@ -150,13 +207,12 @@
     window.addEventListener('message', function(event) {
       var data = event.data;
       if (!data || !data.type) return;
-
       switch (data.type) {
         case 'load-project':
           if (data.url) {
-            safeLoadProject(data.url, function() {
-              postToParent('project-loaded', { url: data.url });
-            });
+            projectUrl = data.url;
+            loadAttempts = 0;
+            safeLoadProject(data.url);
           }
           break;
         case 'green-flag':
@@ -168,20 +224,15 @@
       }
     });
 
-    // 页面加载后
+    // 页面加载
     window.addEventListener('load', function() {
+      log('页面 load 事件');
       postToParent('player-ready', {});
-
-      if (projectUrl) {
-        safeLoadProject(projectUrl, function() {
-          postToParent('project-loaded', { url: projectUrl });
-          hideLoading();
-        });
-      }
 
       // 超时兜底
       setTimeout(function() {
         if (!vmReady) {
+          log('VM 初始化超时 (15s)');
           showError('播放器初始化超时，请检查网络连接后重试');
           postToParent('error', { error: 'Scratch VM 初始化超时' });
         }
@@ -189,7 +240,9 @@
 
       setTimeout(function() {
         if (!projectLoaded) {
+          log('项目加载超时 (20s)');
           hideLoading();
+          postToParent('project-loaded', { timeout: true });
         }
       }, 20000);
     });
