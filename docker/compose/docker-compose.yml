@@ -1,0 +1,183 @@
+# Docker Compose V2 不再需要 version 字段
+
+services:
+  # ========== 数据库 ==========
+  mysql:
+    image: mysql:8.0
+    container_name: scratch-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?❌ 请设置 MYSQL_ROOT_PASSWORD 环境变量}
+      MYSQL_DATABASE: scratch_community
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../../init.sql:/docker-entrypoint-initdb.../../init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    networks:
+      - scratch-internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    container_name: scratch-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    networks:
+      - scratch-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    container_name: scratch-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?❌ 请设置 MINIO_ROOT_USER 环境变量}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?❌ 请设置 MINIO_ROOT_PASSWORD 环境变量}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - scratch-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ========== 应用 ==========
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: ../Dockerfile.backend
+    container_name: scratch-backend
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/scratch_community?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      MINIO_ENDPOINT: http://minio:9000
+      SANDBOX_URL: http://sandbox:8081
+      JWT_SECRET: ${JWT_SECRET:?❌ 请设置 JWT_SECRET 环境变量 (openssl rand -base64 32)}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx512m}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - scratch-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
+
+  sandbox:
+    build:
+      context: ../../sandbox
+      dockerfile: Dockerfile
+    container_name: scratch-sandbox
+    ports:
+      - "${SANDBOX_PORT:-8081}:8081"
+    environment:
+      REDIS_URL: redis://redis:6379
+      PORT: "8081"
+      NODE_OPTIONS: "--max-old-space-size=1024"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - scratch-internal
+    # 禁止沙箱访问外网（仅允许内部服务通信）
+    dns:
+      - "127.0.0.1"  # 禁止 DNS 解析，防止外网访问
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: "1.0"
+    restart: unless-stopped
+
+  # ========== 前端 (Vue 3 多阶段构建) ==========
+  frontend:
+    build:
+      context: ../../frontend-vue
+      dockerfile: ../Dockerfile.frontend
+    container_name: scratch-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    volumes:
+      - ../../nginx/nginx.conf:/et../../nginx/nginx.conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - scratch-internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+
+networks:
+  scratch-internal:
+    driver: bridge
+    internal: true  # 禁止外部访问
+
+volumes:
+  mysql_data:
+  redis_data:
+  minio_data:

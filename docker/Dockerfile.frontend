@@ -1,0 +1,17 @@
+# Multi-stage build: Vue 3 + Nginx
+# Stage 1: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+# 复制构建产物
+COPY --from=builder /app/dist /usr/share/nginx/html
+# Nginx 配置通过 docker-compose volumes 挂载
+# 或在构建时从 docker/ 目录复制（需要将 docker/ 设为 build context）
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

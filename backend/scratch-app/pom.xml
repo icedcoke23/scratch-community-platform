@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.scratch.community</groupId>
+        <artifactId>scratch-community-platform</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>scratch-app</artifactId>
+    <name>scratch-app</name>
+    <description>应用启动模块 - 聚合所有模块</description>
+
+    <dependencies>
+        <!-- 公共基础 -->
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-common-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-common-audit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-common-redis</artifactId>
+        </dependency>
+
+        <!-- 业务模块 -->
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-user</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-editor</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-social</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-judge</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-classroom</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.scratch.community</groupId>
+            <artifactId>scratch-system</artifactId>
+        </dependency>
+
+        <!-- MySQL -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Actuator + Prometheus 监控 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <!-- SpringDoc (Swagger UI) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- Flyway (数据库版本管理) -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
+        <!-- WebSocket (协作编辑) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- Lombok (provided scope, 不传递) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
