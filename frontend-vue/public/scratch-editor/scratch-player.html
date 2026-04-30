@@ -212,12 +212,10 @@
       }
     });
 
-    // 页面加载
     window.addEventListener('load', function() {
       log('页面 load 事件');
       postToParent('player-ready', {});
 
-      // 超时兜底
       setTimeout(function() {
         if (!vmReady) {
           log('VM 初始化超时 (15s)');
@@ -235,7 +233,7 @@
     });
   </script>
 
-  <script src="./lib.min.js"></script>
-  <script src="./chunks/player.js"></script>
+  <script type="text/javascript" src="lib.min.js"></script>
+  <script type="text/javascript" src="chunks/player.js"></script>
 </body>
 </html>

@@ -79,13 +79,13 @@
     // ==================== 调试日志 ====================
     function log(msg) {
       var ts = new Date().toISOString().substr(11, 12);
-      var full = '[ScratchEditor ' + ts + '] ' + msg;
+      var full = "[ScratchEditor " + ts + "] " + msg;
       console.log(full);
       if (DEBUG) {
         var el = document.getElementById('debugLog');
         if (el) {
           el.classList.add('show');
-          el.textContent += full + '\n';
+          el.textContent += full + "\n";
           el.scrollTop = el.scrollHeight;
         }
       }
@@ -118,6 +118,161 @@
       if (spinner) spinner.style.display = 'none';
       var text = document.querySelector('.loading-text');
       if (text) text.textContent = '加载失败';
+    }
+
+    // ==================== Scratch 配置 - 完整原版配置 ====================
+    window.scratchConfig = {
+      session: {
+        token: '',
+        username: '',
+      },
+      backpack: {
+        enable: false,
+        api: "",
+      },
+      cloudData: {
+        enable: false,
+        id: "create",
+        api: "",
+      },
+      projectInfo: {
+        projectName: params.get('project_name') || '',
+        authorUsername: '',
+        authorAvatar: './static/avatar.png',
+      },
+      logo: {
+        show: false,
+        url: '',
+        handleClickLogo: function() {},
+      },
+      stageArea: {
+        fullscreenButton: {
+          show: true,
+          handleBeforeSetStageUnFull: function() { return true; },
+          handleBeforeSetStageFull: function() { return true; },
+        },
+        startButton: {
+          show: true,
+          handleBeforeStart: function() { return true; },
+        },
+        stopButton: {
+          show: true,
+          handleBeforeStop: function() { return true; },
+        },
+      },
+      menuBar: {
+        style: { background: 'hsla(215, 100%, 65%, 1)' },
+        languageButton: {
+          show: false,
+          defaultLanguage: 'zh-cn',
+        },
+        newButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        loadFileButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        saveFileButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        turboModeButton: {
+          show: true,
+        },
+        helpButton: {
+          show: true,
+          handleBefore: function() { return true; },
+        },
+        myStuff: {
+          show: false,
+          url: '',
+        },
+        userAvatar: {
+          show: false,
+          username: '',
+          avatar: '',
+          handleClick: function() {},
+        },
+        customButtons: [],
+      },
+      blocks: {
+        scale: 0.8,
+        hideCatagorys: [],
+        hideBlocks: [],
+      },
+      handleVmInitialized: function(vm) {
+        window.vm = vm;
+        vmReady = true;
+        log("VM 初始化完毕");
+
+        try {
+          vm.on('PROJECT_CHANGED', function() {
+            postToParent('project-changed', {});
+          });
+          vm.on('PROJECT_START', function() {
+            postToParent('project-start', {});
+          });
+          vm.on('PROJECT_STOP', function() {
+            postToParent('project-stop', {});
+          });
+        } catch (e) {
+          log('VM 事件绑定失败: ' + e.message);
+        }
+
+        postToParent('vm-initialized', {});
+
+        if (projectUrl && !projectLoaded) {
+          log('VM 就绪，开始加载项目...');
+          safeLoadProject(projectUrl);
+        }
+      },
+      handleProjectLoaded: function() {
+        if (projectLoaded) return;
+        projectLoaded = true;
+        log('作品载入完毕');
+        hideLoading();
+        if (!projectLoadedSent) {
+          projectLoadedSent = true;
+          postToParent('project-loaded', {});
+        }
+      },
+      handleDefaultProjectLoaded: function() {
+        log('默认项目加载完成');
+        scratchReady = true;
+
+        if (!projectUrl) {
+          projectLoaded = true;
+          hideLoading();
+          postToParent('project-loaded', { isDefault: true });
+        }
+      },
+      defaultProjectURL: "./static/project.sb3",
+      assets: {
+        assetHost: './static',
+        defaultIndex: {
+          sprites: "./static/json_index/sprites.json",
+          costumes: "./static/json_index/costumes.json",
+          backdrops: "./static/json_index/backdrops.json",
+          sounds: "./static/json_index/sounds.json",
+        },
+        handleBeforeSpriteLibraryOpen: function() { return true; },
+        handleBeforeCostumesLibraryOpen: function() { return true; },
+        handleBeforeBackdropsLibraryOpen: function() { return true; },
+        handleBeforeSoundLibraryOpen: function() { return true; },
+      },
+    };
+
+    // ==================== 播放器模式 ====================
+    if (mode === 'player') {
+      window.scratchConfig.menuBar.style = { display: 'none' };
+      window.scratchConfig.menuBar.newButton.show = false;
+      window.scratchConfig.menuBar.loadFileButton.show = false;
+      window.scratchConfig.menuBar.saveFileButton.show = false;
+      window.scratchConfig.menuBar.turboModeButton.show = false;
+      window.scratchConfig.menuBar.helpButton.show = false;
+      window.scratchConfig.stageArea.scale = Math.min(window.innerWidth / 480, window.innerHeight / 360);
     }
 
     // ==================== 项目加载 ====================
@@ -342,11 +497,8 @@
     // ==================== 页面加载后处理 ====================
     window.addEventListener('load', function() {
       log('页面 load 事件');
-
-      // 通知父窗口编辑器已加载
       postToParent('editor-ready', { projectId: projectId });
 
-      // 超时兜底：15 秒后如果 VM 仍未就绪
       setTimeout(function() {
         if (!vmReady) {
           log('Scratch VM 初始化超时 (15s)');
@@ -365,9 +517,7 @@
     });
   </script>
 
-  <!-- Scratch 核心库（VM + React 组件 + HOC） -->
-  <script src="./lib.min.js"></script>
-  <!-- GUI 入口（自动渲染到 #scratch） -->
-  <script src="./chunks/gui.js"></script>
+  <script type="text/javascript" src="lib.min.js"></script>
+  <script type="text/javascript" src="chunks/gui.js"></script>
 </body>
 </html>
