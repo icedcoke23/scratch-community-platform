@@ -6,46 +6,342 @@
   <title>Scratch 播放器</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    #app { width: 100%; height: 100%; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .loading-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .error-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #ffebee;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .error-container.visible {
+      display: flex;
+    }
+
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #c62828;
+      margin-bottom: 8px;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #d32f2f;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    iframe.loading {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <div class="loading-container" id="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">正在加载 Scratch 项目...</div>
+    </div>
+    <div class="error-container" id="error">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title" id="error-title">加载失败</div>
+      <div class="error-message" id="error-message"></div>
+    </div>
+    <iframe id="turbowarp-player" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads allow-modals" allow="autoplay; clipboard-read; clipboard-write"></iframe>
+  </div>
+
   <script>
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name);
-    }
+    (function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const errorTitleEl = document.getElementById('error-title');
+      const errorMessageEl = document.getElementById('error-message');
+      const iframe = document.getElementById('turbowarp-player');
 
-    const projectUrl = getQueryParam('project_url');
+      const MESSAGES = {
+        READY: 'tw-player-ready',
+        ERROR: 'tw-player-error',
+        PROJECT_LOADED: 'tw-project-loaded',
+        RUNNING: 'tw-running',
+        STOPPED: 'tw-stopped',
+        GREEN_FLAG: 'tw-green-flag',
+        STOP_ALL: 'tw-stop-all'
+      };
 
-    let turboWarpUrl = 'https://turbowarp.org/';
-    if (projectUrl) {
-      turboWarpUrl += '?project_url=' + encodeURIComponent(projectUrl);
-    }
+      const STATE = {
+        STOPPED: 'stopped',
+        RUNNING: 'running',
+        PAUSED: 'paused'
+      };
 
-    const iframe = document.createElement('iframe');
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = 'none';
-    iframe.setAttribute('allow', 'autoplay; clipboard-read; clipboard-write');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-downloads');
-    iframe.src = turboWarpUrl;
+      let currentState = STATE.STOPPED;
 
-    window.addEventListener('message', function(event) {
-      if (event.source === iframe.contentWindow) {
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function showError(title, message) {
+        errorTitleEl.textContent = title;
+        errorMessageEl.textContent = message;
+        errorEl.classList.add('visible');
+        loadingEl.classList.add('hidden');
+      }
+
+      function hideLoading() {
+        loadingEl.classList.add('hidden');
+      }
+
+      function validateProjectUrl(url) {
+        if (!url) {
+          showError('缺少项目 URL', '未提供项目 URL，无法加载 Scratch 项目');
+          return null;
+        }
+        try {
+          const parsed = new URL(url);
+          return parsed.href;
+        } catch {
+          showError('URL 格式错误', '提供的项目 URL 格式不正确，请检查后重试');
+          return null;
+        }
+      }
+
+      function buildTurboWarpUrl(projectUrl) {
+        const baseUrl = 'https://turbowarp.org/';
+        if (!projectUrl) return baseUrl;
+
+        const url = new URL(baseUrl);
+        url.searchParams.set('project_url', projectUrl);
+        url.searchParams.set('embed', 'true');
+        url.searchParams.set('autoplay', 'true');
+        return url.toString();
+      }
+
+      function forwardToParent(event) {
+        if (!event.data || typeof event.data !== 'object') return;
         window.parent.postMessage(event.data, '*');
-      } else if (event.source === window.parent) {
+      }
+
+      function forwardToIframe(event) {
+        if (!iframe.contentWindow) return;
+        if (!event.data || typeof event.data !== 'object') return;
+        if (event.source !== window.parent) return;
+
         iframe.contentWindow.postMessage(event.data, '*');
       }
-    });
 
-    document.getElementById('app').appendChild(iframe);
+      function sendControlCommand(command) {
+        if (!iframe.contentWindow) return;
+        iframe.contentWindow.postMessage({ type: command }, '*');
+      }
 
-    setTimeout(() => {
-      window.parent.postMessage({ type: 'iframe-ready' }, '*');
-    }, 500);
+      function handleMessage(event) {
+        const data = event.data;
+
+        if (!data || typeof data !== 'object') return;
+
+        switch (data.type) {
+          case MESSAGES.READY:
+            hideLoading();
+            currentState = STATE.STOPPED;
+            window.parent.postMessage({
+              type: 'iframe-ready',
+              mode: 'player',
+              state: currentState
+            }, '*');
+            break;
+
+          case MESSAGES.ERROR:
+            showError('播放器错误', data.message || '播放器加载时发生未知错误');
+            break;
+
+          case MESSAGES.PROJECT_LOADED:
+            hideLoading();
+            window.parent.postMessage({
+              type: 'project-loaded',
+              projectId: data.projectId,
+              projectUrl: data.projectUrl
+            }, '*');
+            break;
+
+          case MESSAGES.RUNNING:
+            currentState = STATE.RUNNING;
+            window.parent.postMessage({
+              type: 'playback-state',
+              state: STATE.RUNNING
+            }, '*');
+            break;
+
+          case MESSAGES.STOPPED:
+            currentState = STATE.STOPPED;
+            window.parent.postMessage({
+              type: 'playback-state',
+              state: STATE.STOPPED
+            }, '*');
+            break;
+
+          case 'tw-green-flag':
+            currentState = STATE.RUNNING;
+            window.parent.postMessage({
+              type: 'green-flag'
+            }, '*');
+            break;
+
+          case 'tw-stop-all':
+            currentState = STATE.STOPPED;
+            window.parent.postMessage({
+              type: 'stop-all'
+            }, '*');
+            break;
+
+          default:
+            forwardToParent(event);
+        }
+      }
+
+      function setupIframeLoadHandler() {
+        let loadTimeout;
+
+        iframe.addEventListener('load', function() {
+          clearTimeout(loadTimeout);
+
+          loadTimeout = setTimeout(function() {
+            hideLoading();
+          }, 2000);
+        });
+
+        iframe.addEventListener('error', function() {
+          clearTimeout(loadTimeout);
+          showError('加载失败', '无法加载 Scratch 项目，请检查网络连接后重试');
+        });
+
+        loadTimeout = setTimeout(function() {
+          showError('加载超时', '项目加载时间过长，请刷新页面重试');
+        }, 30000);
+      }
+
+      function handleParentMessages(event) {
+        const data = event.data;
+
+        if (!data || typeof data !== 'object') return;
+        if (event.source !== window.parent) return;
+
+        switch (data.type) {
+          case 'play':
+          case MESSAGES.GREEN_FLAG:
+            sendControlCommand(MESSAGES.GREEN_FLAG);
+            break;
+
+          case 'stop':
+          case 'pause':
+          case MESSAGES.STOP_ALL:
+            sendControlCommand(MESSAGES.STOP_ALL);
+            break;
+
+          case 'reload':
+            window.location.reload();
+            break;
+
+          default:
+            forwardToIframe(event);
+        }
+      }
+
+      function initialize() {
+        const projectUrl = getQueryParam('project_url');
+        const validatedUrl = validateProjectUrl(projectUrl);
+
+        if (!validatedUrl) return;
+
+        setupIframeLoadHandler();
+
+        window.addEventListener('message', function(event) {
+          if (event.source === iframe.contentWindow) {
+            handleMessage(event);
+          } else {
+            handleParentMessages(event);
+          }
+        });
+
+        const turboWarpUrl = buildTurboWarpUrl(validatedUrl);
+        iframe.src = turboWarpUrl;
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+      } else {
+        initialize();
+      }
+    })();
   </script>
 </body>
 </html>

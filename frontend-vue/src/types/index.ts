@@ -245,6 +245,37 @@ export interface ApiResponse<T = unknown> {
   code: number
   msg: string
   data: T
-  /** 服务端时间戳（ms），用于时间校准和缓存控制 */
-  timestamp: number
+  timestamp?: number
+}
+
+export type { ErrorInfo, ApiError, ErrorContext, ErrorCodeType, ErrorCode } from './errors'
+export { isApiError, getErrorTypeFromCode, formatErrorMessage } from './errors'
+
+export interface PaginationParams {
+  page?: number
+  pageSize?: number
+  sortBy?: string
+  order?: 'asc' | 'desc'
+}
+
+export interface PaginationResult<T> {
+  records: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface ListQuery {
+  page?: number
+  pageSize?: number
+  keyword?: string
+}
+
+export interface ListResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
 }

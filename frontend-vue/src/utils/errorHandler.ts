@@ -4,34 +4,23 @@
  * 替代直接弹窗的方式，通过全局状态管理错误，
  * 组件可以按需展示错误信息（弹窗、行内提示、Toast 等）。
  */
-import { ref } from 'vue'
-
-export interface ErrorInfo {
-  id: number
-  type: 'network' | 'auth' | 'rateLimit' | 'server' | 'timeout'
-  message: string
-  timestamp: number
-}
+import { ref, computed } from 'vue'
+import type { ErrorInfo, ErrorCodeType } from '@/types/errors'
+import { getErrorTypeFromCode, formatErrorMessage } from '@/types/errors'
 
 const errors = ref<ErrorInfo[]>([])
 let errorIdCounter = 0
 
-/** 最大保留错误数 */
 const MAX_ERRORS = 10
-
-/** 重复错误抑制时间（ms） */
 const DEDUP_INTERVAL = 3000
-
-/** 最近的错误消息（用于去重） */
 const recentMessages = new Map<string, number>()
 
-/**
- * 添加错误
- */
-export function addError(type: ErrorInfo['type'], message: string): ErrorInfo {
+export function addError(
+  type: ErrorInfo['type'],
+  message: string,
+  options?: { code?: number; details?: string }
+): ErrorInfo {
   const now = Date.now()
-
-  // 去重：相同消息在 DEDUP_INTERVAL 内不重复添加
   const lastTime = recentMessages.get(message)
   if (lastTime && now - lastTime < DEDUP_INTERVAL) {
     return errors.value[errors.value.length - 1]
@@ -42,12 +31,13 @@ export function addError(type: ErrorInfo['type'], message: string): ErrorInfo {
     id: ++errorIdCounter,
     type,
     message,
-    timestamp: now
+    timestamp: now,
+    code: options?.code,
+    details: options?.details
   }
 
   errors.value.push(error)
 
-  // 超过最大数量，移除最旧的
   if (errors.value.length > MAX_ERRORS) {
     errors.value.shift()
   }
@@ -55,29 +45,32 @@ export function addError(type: ErrorInfo['type'], message: string): ErrorInfo {
   return error
 }
 
-/**
- * 清除指定错误
- */
+export function addErrorFromResponse(code: number, msg: string): ErrorInfo {
+  const type = getErrorTypeFromCode(code)
+  const formattedMsg = formatErrorMessage(msg, code)
+  return addError(type, formattedMsg, { code })
+}
+
 export function removeError(id: number) {
   const idx = errors.value.findIndex(e => e.id === id)
   if (idx !== -1) errors.value.splice(idx, 1)
 }
 
-/**
- * 清除所有错误
- */
 export function clearErrors() {
   errors.value = []
   recentMessages.clear()
 }
 
-/**
- * 获取错误列表
- */
+export const recentErrors = computed(() => {
+  return errors.value.slice(-5).reverse()
+})
+
 export function useErrors() {
   return {
     errors,
+    recentErrors,
     addError,
+    addErrorFromResponse,
     removeError,
     clearErrors
   }

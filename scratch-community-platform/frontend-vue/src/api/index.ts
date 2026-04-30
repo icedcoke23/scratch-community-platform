@@ -41,14 +41,42 @@ export interface ProjectDetail {
   blockCount?: number
   complexityScore?: number
   createdAt?: string
+  updatedAt?: string
   sb3Url?: string
+  author?: {
+    id: number
+    username: string
+    avatar?: string
+  }
+  likeCount?: number
+  viewCount?: number
+}
+
+export interface ProjectQueryParams {
+  page?: number
+  pageSize?: number
+  status?: 'draft' | 'published' | ''
+  search?: string
+  sortBy?: 'createdAt' | 'updatedAt' | 'likeCount'
+  sortOrder?: 'asc' | 'desc'
+}
+
+export interface ProjectListResponse {
+  list: ProjectDetail[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
 }
 
 export const projectApi = {
+  getList(params?: ProjectQueryParams): Promise<ApiResponse<ProjectListResponse>> {
+    return request.get('/v1/project', { params })
+  },
   getDetail(id: number): Promise<ApiResponse<ProjectDetail>> {
     return request.get(`/v1/project/${id}`)
   },
-  create(data: Partial<ProjectDetail>): Promise<ApiResponse<any>> {
+  create(data: Partial<ProjectDetail>): Promise<ApiResponse<ProjectDetail>> {
     return request.post('/v1/project', data)
   },
   update(id: number, data: Partial<ProjectDetail>): Promise<ApiResponse<any>> {
@@ -56,6 +84,9 @@ export const projectApi = {
   },
   publish(id: number): Promise<ApiResponse<any>> {
     return request.post(`/v1/project/${id}/publish`)
+  },
+  delete(id: number): Promise<ApiResponse<any>> {
+    return request.delete(`/v1/project/${id}`)
   },
   uploadSb3(id: number, file: File): Promise<ApiResponse<any>> {
     const formData = new FormData()

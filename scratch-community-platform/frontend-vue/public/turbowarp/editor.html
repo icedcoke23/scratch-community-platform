@@ -6,55 +6,295 @@
   <title>Scratch 编辑器</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    #app { width: 100%; height: 100%; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .loading-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .error-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #ffebee;
+      padding: 20px;
+      z-index: 20;
+    }
+
+    .error-container.visible {
+      display: flex;
+    }
+
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #c62828;
+      margin-bottom: 8px;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #d32f2f;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    iframe.loading {
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <div class="loading-container" id="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">正在加载 Scratch 编辑器...</div>
+    </div>
+    <div class="error-container" id="error">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title" id="error-title">加载失败</div>
+      <div class="error-message" id="error-message"></div>
+    </div>
+    <iframe id="turbowarp-editor" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads allow-modals" allow="clipboard-read; clipboard-write"></iframe>
+  </div>
+
   <script>
-    // 获取 URL 参数
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name);
-    }
+    (function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const errorTitleEl = document.getElementById('error-title');
+      const errorMessageEl = document.getElementById('error-message');
+      const iframe = document.getElementById('turbowarp-editor');
 
-    const projectUrl = getQueryParam('project_url');
+      const MESSAGES = {
+        READY: 'tw-editor-ready',
+        ERROR: 'tw-editor-error',
+        PROJECT_LOADED: 'tw-project-loaded',
+        PROJECT_CHANGED: 'tw-project-changed',
+        SAVE: 'tw-save-project',
+        SAVE_RESULT: 'tw-save-result',
+        LOAD_PROJECT: 'tw-load-project',
+        GET_STATE: 'tw-get-state',
+        STATE_RESULT: 'tw-state-result'
+      };
 
-    // 构建 TurboWarp URL
-    let turboWarpUrl = 'https://turbowarp.org/editor';
-    if (projectUrl) {
-      turboWarpUrl += '?project_url=' + encodeURIComponent(projectUrl);
-    }
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
 
-    // 构建 iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = 'none';
-    iframe.setAttribute('allow', 'clipboard-read; clipboard-write');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-forms allow-downloads');
-    iframe.src = turboWarpUrl;
+      function showError(title, message) {
+        errorTitleEl.textContent = title;
+        errorMessageEl.textContent = message;
+        errorEl.classList.add('visible');
+        loadingEl.classList.add('hidden');
+      }
 
-    // 监听 iframe 消息并转发
-    window.addEventListener('message', function(event) {
-      if (event.source === iframe.contentWindow) {
-        // 从 TurboWarp 转发到父页面
+      function showLoading() {
+        errorEl.classList.remove('visible');
+        loadingEl.classList.remove('hidden');
+      }
+
+      function hideLoading() {
+        loadingEl.classList.add('hidden');
+      }
+
+      function validateProjectUrl(url) {
+        if (!url) return null;
+        try {
+          const parsed = new URL(url);
+          return parsed.href;
+        } catch {
+          showError('URL 格式错误', '提供的项目 URL 格式不正确，请检查后重试');
+          return null;
+        }
+      }
+
+      function buildTurboWarpUrl(projectUrl) {
+        const baseUrl = 'https://turbowarp.org/editor';
+        if (!projectUrl) return baseUrl;
+
+        const url = new URL(baseUrl);
+        url.searchParams.set('project_url', projectUrl);
+        url.searchParams.set('embed', 'true');
+        return url.toString();
+      }
+
+      function forwardToParent(event) {
+        if (!event.data || typeof event.data !== 'object') return;
         window.parent.postMessage(event.data, '*');
-      } else if (event.source === window.parent) {
-        // 从父页面转发到 TurboWarp
+      }
+
+      function forwardToIframe(event) {
+        if (!iframe.contentWindow) return;
+        if (!event.data || typeof event.data !== 'object') return;
+        if (event.source !== window.parent) return;
+
         iframe.contentWindow.postMessage(event.data, '*');
       }
-    });
 
-    document.getElementById('app').appendChild(iframe);
+      function handleMessage(event) {
+        const data = event.data;
 
-    // 通知父页面 iframe 已加载
-    setTimeout(() => {
-      window.parent.postMessage({
-        type: 'iframe-ready'
-      }, '*');
-    }, 500);
+        if (!data || typeof data !== 'object') return;
+
+        switch (data.type) {
+          case 'tw-init':
+            hideLoading();
+            break;
+
+          case MESSAGES.READY:
+            hideLoading();
+            window.parent.postMessage({ type: 'iframe-ready', mode: 'editor' }, '*');
+            break;
+
+          case MESSAGES.ERROR:
+            showError('编辑器错误', data.message || '编辑器加载时发生未知错误');
+            break;
+
+          case MESSAGES.PROJECT_LOADED:
+            window.parent.postMessage({
+              type: 'project-loaded',
+              projectId: data.projectId,
+              projectUrl: data.projectUrl
+            }, '*');
+            break;
+
+          case MESSAGES.PROJECT_CHANGED:
+            window.parent.postMessage({
+              type: 'project-changed',
+              projectId: data.projectId,
+              hasUnsavedChanges: data.hasUnsavedChanges
+            }, '*');
+            break;
+
+          case MESSAGES.SAVE_RESULT:
+            window.parent.postMessage({
+              type: 'save-result',
+              success: data.success,
+              error: data.error,
+              projectId: data.projectId
+            }, '*');
+            break;
+
+          case MESSAGES.STATE_RESULT:
+            window.parent.postMessage({
+              type: 'state-result',
+              state: data.state
+            }, '*');
+            break;
+
+          default:
+            forwardToParent(event);
+        }
+      }
+
+      function setupIframeLoadHandler() {
+        let loadTimeout;
+
+        iframe.addEventListener('load', function() {
+          clearTimeout(loadTimeout);
+
+          loadTimeout = setTimeout(function() {
+            hideLoading();
+          }, 2000);
+        });
+
+        iframe.addEventListener('error', function() {
+          clearTimeout(loadTimeout);
+          showError('加载失败', '无法加载 Scratch 编辑器，请检查网络连接后重试');
+        });
+
+        loadTimeout = setTimeout(function() {
+          showError('加载超时', '编辑器加载时间过长，请刷新页面重试');
+        }, 30000);
+      }
+
+      function initialize() {
+        const projectUrl = getQueryParam('project_url');
+        const validatedUrl = validateProjectUrl(projectUrl);
+
+        setupIframeLoadHandler();
+
+        window.addEventListener('message', function(event) {
+          if (event.source === iframe.contentWindow) {
+            handleMessage(event);
+          } else {
+            forwardToIframe(event);
+          }
+        });
+
+        const turboWarpUrl = buildTurboWarpUrl(validatedUrl);
+        iframe.src = turboWarpUrl;
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+      } else {
+        initialize();
+      }
+    })();
   </script>
 </body>
 </html>
