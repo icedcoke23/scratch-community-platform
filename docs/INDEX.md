@@ -24,6 +24,7 @@
 | [协作编辑设计](COLLABORATIVE_EDITING.md) | WebSocket 协作编辑的 CRDT/OT 架构 |
 | [沙箱安全设计](SANDBOX_SECURITY.md) | 判题沙箱的进程隔离 + 资源限制 + 安全策略 |
 | [Scratch 集成分析](SCRATCH_INTEGRATION_ANALYSIS.md) | Scratch VM headless 集成方案与 TurboWarp 嵌入 |
+| [Scratch 编译器替换报告](SCRATCH_COMPILER_REPLACEMENT.md) | teaching-open 预编译方案替换 scratch-gui 编译方案 |
 | [移动端计划](MOBILE_APP_PLAN.md) | uni-app 移动端规划（iOS/Android） |
 
 ---
