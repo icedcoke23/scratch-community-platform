@@ -1,0 +1,105 @@
+upstream scratch_backend {
+    server 127.0.0.1:8080;
+}
+
+server {
+    listen 80;
+    server_name _;
+    
+    root /var/www/html;
+    index index.html;
+
+    # TurboWarp 静态文件（自托管）
+    location /turbowarp/ {
+        alias /var/www/turbowarp/;
+        try_files $uri $uri/ =404;
+        
+        # 允许跨域访问 TurboWarp 资源
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type' always;
+        
+        # 缓存静态资源
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 30d;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # API 路由
+    location /api/ {
+        proxy_pass http://scratch_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # CORS 预检请求处理
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+    }
+
+    # SB3 下载端点 - 独立 location 确保 CORS 头正确添加
+    location ~ ^/api/v1/project/(\d+)/sb3/download$ {
+        proxy_pass http://scratch_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        
+        # CORS 头 - 必须加 always 才能在代理响应中生效
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+        add_header 'Cache-Control' 'public, max-age=300' always;
+        
+        # 处理 OPTIONS 预检请求
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+    }
+
+    # Swagger UI
+    location /swagger-ui {
+        proxy_pass http://scratch_backend;
+        proxy_set_header Host $host;
+    }
+
+    # Actuator 端点
+    location /actuator {
+        proxy_pass http://scratch_backend;
+        proxy_set_header Host $host;
+    }
+
+    # WebSocket 支持
+    location /ws/ {
+        proxy_pass http://scratch_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # 前端 SPA 路由
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/rss+xml application/atom+xml image/svg+xml;
+    gzip_min_length 1000;
+}
