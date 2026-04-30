@@ -43,3 +43,6 @@ application-local.yml
 docs/DEPLOYMENT_CREDENTIALS.md
 # Sensitive files
 DEPLOYMENT_CREDENTIALS.md
+
+# TurboWarp 自托管构建产物（通过 scripts/build-turbowarp.sh 生成）
+frontend-vue/public/turbowarp/
