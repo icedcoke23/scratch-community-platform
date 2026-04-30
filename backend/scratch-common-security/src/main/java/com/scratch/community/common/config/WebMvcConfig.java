@@ -81,6 +81,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/v1/social/rank/**",
                         "/api/v1/social/project/*/comments",
 
+                        // 项目 sb3 公开下载（供 TurboWarp 等外部编辑器加载）
+                        "/api/v1/project/*/sb3/download",
+
                         // 题目模块 - 未登录可浏览
                         "/api/problem",
                         "/api/problem/{id}",

@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * 项目模块 API
@@ -110,10 +111,17 @@ public class ProjectController {
         return R.ok();
     }
 
-    @Operation(summary = "下载 sb3 文件")
+    @Operation(summary = "下载 sb3 文件（presigned URL，需登录）")
     @GetMapping("/project/{id}/sb3")
     public R<String> downloadSb3(@PathVariable Long id) {
         return R.ok(projectService.getSb3Url(LoginUser.getUserId(), id));
+    }
+
+    @Operation(summary = "公开 sb3 下载（CORS 友好，供 TurboWarp 等外部编辑器加载）",
+               description = "返回 sb3 文件流，带 CORS 头，无需登录。仅限已发布项目。")
+    @GetMapping("/project/{id}/sb3/download")
+    public void downloadSb3Public(@PathVariable Long id, HttpServletResponse response) {
+        projectService.streamSb3(id, response);
     }
 
     @Operation(summary = "发布项目")

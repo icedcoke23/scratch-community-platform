@@ -23,6 +23,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -223,6 +226,69 @@ public class ProjectService {
         }
         // 生成 1 小时有效的 presigned URL（TurboWarp 需要可公开访问的链接）
         return fileUploadUtils.refreshPresignedUrl(project.getSb3Url(), 1, java.util.concurrent.TimeUnit.HOURS);
+    }
+
+    /**
+     * 公开流式下载 sb3 文件（CORS 友好）
+     * <p>供 TurboWarp 等外部编辑器通过 project_url 参数加载项目。
+     * 仅允许下载已发布项目的 sb3 文件，项目作者可下载自己的任何状态项目。
+     * <p>直接从 MinIO 读取并流式写入响应，避免额外的 HTTP 跳转和 CORS 问题。
+     */
+    @Transactional(readOnly = true)
+    public void streamSb3(Long projectId, HttpServletResponse response) {
+        Project project = getAndCheck(projectId);
+        if (project.getSb3Url() == null) {
+            throw new BizException(ErrorCode.SB3_FORMAT_ERROR.getCode(), "项目未上传 sb3 文件");
+        }
+        // 权限检查：已发布的项目任何人都可以下载，未发布的只有作者可以
+        // 这里不做登录检查（公开端点），只检查项目状态
+        if (!"published".equals(project.getStatus())) {
+            throw new BizException(ErrorCode.PROJECT_NO_PERMISSION);
+        }
+
+        // 从 MinIO 获取文件流
+        String bucket = null;
+        String key = null;
+        try {
+            java.net.URI uri = new java.net.URI(project.getSb3Url());
+            String path = uri.getPath();
+            if (path.startsWith("/")) path = path.substring(1);
+            int slashIdx = path.indexOf('/');
+            if (slashIdx > 0 && slashIdx < path.length() - 1) {
+                bucket = path.substring(0, slashIdx);
+                key = path.substring(slashIdx + 1);
+            }
+        } catch (Exception e) {
+            log.warn("解析 sb3 URL 失败: {}", project.getSb3Url());
+        }
+
+        if (bucket == null || key == null) {
+            throw new BizException(ErrorCode.FILE_UPLOAD_ERROR.getCode(), "sb3 文件地址解析失败");
+        }
+
+        try (InputStream is = fileUploadUtils.getObjectStream(bucket, key);
+             OutputStream os = response.getOutputStream()) {
+
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-Disposition", "attachment; filename=\"project_" + projectId + ".sb3\"");
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+            response.setHeader("Cache-Control", "public, max-age=300");
+
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            os.flush();
+
+            log.info("公开 sb3 下载: projectId={}", projectId);
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("sb3 流式下载失败: projectId={}, error={}", projectId, e.getMessage(), e);
+            throw new BizException(ErrorCode.FILE_UPLOAD_ERROR.getCode(), "文件下载失败");
+        }
     }
 
     /**

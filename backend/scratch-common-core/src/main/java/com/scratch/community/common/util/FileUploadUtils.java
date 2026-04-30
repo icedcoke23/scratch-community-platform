@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -250,6 +251,27 @@ public class FileUploadUtils {
         } catch (Exception e) {
             log.error("获取预签名 URL 失败: bucket={}, key={}, error={}", bucket, key, e.getMessage(), e);
             throw new BizException(ErrorCode.FILE_UPLOAD_ERROR.getCode(), "获取文件 URL 失败");
+        }
+    }
+
+    /**
+     * 获取 MinIO 对象的输入流（用于流式下载）
+     *
+     * @param bucket 存储桶名
+     * @param key    对象 key
+     * @return 对象输入流
+     */
+    public InputStream getObjectStream(String bucket, String key) {
+        try {
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(key)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("获取文件流失败: bucket={}, key={}, error={}", bucket, key, e.getMessage(), e);
+            throw new BizException(ErrorCode.FILE_UPLOAD_ERROR.getCode(), "获取文件失败");
         }
     }
 

@@ -127,7 +127,6 @@ import { createLogger } from '@/utils/logger'
 import type { ProjectDetail } from '@/types'
 
 const { t } = useI18n()
-
 const logger = createLogger('Editor')
 
 defineOptions({ name: 'ScratchEditorView' })
@@ -158,29 +157,27 @@ const editorContainer = ref<HTMLDivElement>()
 
 // 自动保存定时器
 let autoSaveTimer: ReturnType<typeof setInterval> | null = null
-const AUTO_SAVE_INTERVAL = 60000 // 60 秒自动保存一次
-
-// ===== 核心修复：使用 TurboWarp 编辑器（非 embed 播放器） =====
-// turbowarp.org/editor 提供完整的 Scratch 编辑器界面（积木区、角色区、舞台等）
-// turbowarp.org/embed 仅提供播放器/预览界面
-const editorUrl = ref('https://turbowarp.org/editor')
-
-// 是否新建项目
-const isNewProject = computed(() => !route.params.id || route.params.id === 'new')
+const AUTO_SAVE_INTERVAL = 60000
 
 // ScratchBridge 实例
 let scratchBridge: ScratchBridge | null = null
 
-// 编辑器 iframe 是否已加载完成
-let editorReady = false
-// 待加载的 sb3 数据（base64），编辑器 ready 后加载
-let pendingSb3Base64: string | null = null
+// 是否新建项目
+const isNewProject = computed(() => !route.params.id || route.params.id === 'new')
 
 /**
- * 加载项目信息 + 准备 sb3 数据
- * 新流程：
- *   1. 打开 turbowarp.org/editor（完整编辑器）
- *   2. iframe 加载完成后，如果已有 sb3 文件，获取 presigned URL 并通过 postMessage 加载
+ * Scratch 编辑器 URL
+ *
+ * 核心修复：使用 turbowarp.org/editor（完整编辑器，含积木区/角色区/舞台）
+ * 而非 turbowarp.org/embed（仅播放器/预览）
+ *
+ * 对于已有项目，通过 ?project_url= 参数传入 sb3 文件的公开下载地址，
+ * TurboWarp 会在加载时自动拉取并还原项目。
+ */
+const editorUrl = ref('https://turbowarp.org/editor')
+
+/**
+ * 加载项目信息 + 构建编辑器 URL
  */
 async function loadProject() {
   if (isNewProject.value) {
@@ -197,8 +194,8 @@ async function loadProject() {
       projectDescription.value = res.data.description || ''
       projectTags.value = res.data.tags || ''
 
-      // 如果项目有 sb3 文件，获取下载 URL 然后通过 bridge 加载
-      await loadSb3IntoEditor()
+      // 构建带 project_url 的编辑器 URL
+      buildEditorUrl()
     }
   } catch (e) {
     ElMessage.error(t('editor.loadFailed'))
@@ -208,52 +205,34 @@ async function loadProject() {
 }
 
 /**
- * 获取 sb3 文件 URL 并加载到编辑器
+ * 构建编辑器 URL
+ * 使用 TurboWarp 的 ?project_url= 参数加载 sb3 文件
+ * 后端 /api/v1/project/{id}/sb3/download 端点返回 sb3 文件流（CORS 友好，无需登录）
  */
-async function loadSb3IntoEditor() {
+function buildEditorUrl() {
   if (!project.value) return
 
-  try {
-    const res = await projectApi.getSb3Url(project.value.id)
-    if (res.code === 0 && res.data) {
-      const sb3Url = res.data as unknown as string
-      logger.log('获取到 sb3 URL:', sb3Url)
+  const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
 
-      if (editorReady && scratchBridge) {
-        // 编辑器已就绪，直接加载
-        scratchBridge.loadProject(sb3Url)
-      } else {
-        // 编辑器还未就绪，暂存 URL，等 onIframeLoad 后加载
-        pendingSb3Base64 = sb3Url // 复用字段存 URL
-      }
-    } else {
-      logger.log('项目暂无 sb3 文件，打开空白编辑器')
-    }
-  } catch (e) {
-    logger.warn('获取 sb3 URL 失败:', e)
+  if (project.value.sb3Url) {
+    // 有 sb3 文件：通过 project_url 参数加载到编辑器
+    editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(downloadUrl)}`
+    logger.log('编辑器 URL（含 project_url）:', editorUrl.value)
+  } else {
+    // 无 sb3 文件：打开空白编辑器
+    editorUrl.value = 'https://turbowarp.org/editor'
+    logger.log('编辑器 URL（空白项目）')
   }
 }
 
 // iframe 加载完成
 function onIframeLoad() {
   loading.value = false
-  editorReady = true
   setupEditorCommunication()
-
-  // 如果有待加载的 sb3 数据，加载它
-  if (pendingSb3Base64) {
-    logger.log('编辑器就绪，加载待处理的 sb3 数据')
-    // 短暂延迟确保 TurboWarp 编辑器完全初始化
-    setTimeout(() => {
-      scratchBridge?.loadProject(pendingSb3Base64!)
-      pendingSb3Base64 = null
-    }, 1500)
-  }
 }
 
 // 设置与 Scratch 编辑器的通信
 function setupEditorCommunication() {
-  // 销毁旧的 bridge
   scratchBridge?.destroy()
 
   scratchBridge = createScratchBridge({
@@ -273,7 +252,6 @@ function setupEditorCommunication() {
 
 /**
  * 自动保存 sb3 到后端
- * @param base64Data base64 编码的 sb3 数据
  */
 async function handleSb3AutoSave(base64Data: string) {
   if (!project.value || autoSaving.value) return
@@ -311,7 +289,6 @@ function requestProjectExport() {
 // 保存项目
 async function saveProject() {
   if (!project.value && isNewProject.value) {
-    // 新建项目 — 先创建
     try {
       saving.value = true
       const res = await projectApi.create({
@@ -322,7 +299,6 @@ async function saveProject() {
       if (res.code === 0 && res.data) {
         project.value = res.data as unknown as ProjectDetail
         ElMessage.success(t('editor.projectCreated'))
-        // 替换路由为编辑模式
         router.replace(`/editor/${res.data.id}`)
       }
     } catch (e) {
@@ -337,9 +313,7 @@ async function saveProject() {
 
   try {
     saving.value = true
-    // 先请求导出 sb3 数据
     requestProjectExport()
-    // 保存项目元信息
     await projectApi.update(project.value.id, {
       title: projectTitle.value,
       description: projectDescription.value,
@@ -368,7 +342,6 @@ async function publishProject() {
   try {
     await ElMessageBox.confirm(t('editor.publishConfirm'), t('editor.publishTitle'))
     publishing.value = true
-    // 发布前先导出最新 sb3
     requestProjectExport()
     await projectApi.publish(project.value.id)
     project.value.status = 'published'
@@ -415,7 +388,6 @@ function handleExport(command: string) {
 // 导入 SB3 文件
 async function handleSb3Import(file: File) {
   try {
-    // 如果是新建项目，先创建项目
     if (isNewProject.value && !project.value) {
       saving.value = true
       const res = await projectApi.create({
@@ -438,16 +410,14 @@ async function handleSb3Import(file: File) {
       return false
     }
 
-    // 上传 sb3 文件到后端
     saving.value = true
     const uploadRes = await projectApi.uploadSb3(project.value.id, file)
     if (uploadRes.code === 0) {
       ElMessage.success(t('editor.importSuccess'))
-
-      // 获取 sb3 presigned URL 并加载到编辑器
-      const urlRes = await projectApi.getSb3Url(project.value.id)
-      if (urlRes.code === 0 && urlRes.data) {
-        scratchBridge?.loadProject(urlRes.data as unknown as string)
+      // 重新构建编辑器 URL 并刷新 iframe
+      buildEditorUrl()
+      if (scratchFrame.value) {
+        scratchFrame.value.src = editorUrl.value
       }
       isDirty.value = false
     } else {
@@ -458,7 +428,7 @@ async function handleSb3Import(file: File) {
   } finally {
     saving.value = false
   }
-  return false // 阻止 el-upload 自动上传
+  return false
 }
 
 // 返回
@@ -498,26 +468,20 @@ onBeforeUnmount(() => {
   }
 })
 
-// 键盘快捷键处理
+// 键盘快捷键
 function handleKeydown(e: KeyboardEvent) {
-  // Ctrl/Cmd + S: 保存
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
     saveProject()
   }
-  // Ctrl/Cmd + Enter: 发布
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
-    if (project.value?.status === 'draft') {
-      publishProject()
-    }
+    if (project.value?.status === 'draft') publishProject()
   }
-  // F11: 全屏切换
   if (e.key === 'F11') {
     e.preventDefault()
     fullscreen()
   }
-  // Escape: 退出全屏
   if (e.key === 'Escape' && isFullscreen.value) {
     fullscreen()
   }
@@ -528,7 +492,6 @@ onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
   document.addEventListener('keydown', handleKeydown)
 
-  // 启动自动保存定时器（仅编辑已有项目时）
   if (!isNewProject.value) {
     autoSaveTimer = setInterval(() => {
       if (isDirty.value && project.value) {
