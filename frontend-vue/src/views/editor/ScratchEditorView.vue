@@ -119,7 +119,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft, Edit, FullScreen, Check, Download, Loading, Upload
 } from '@element-plus/icons-vue'
-import { projectApi } from '@/api'
+import { projectApi, getPresignedUrl } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from '@/composables'
 import { createScratchBridge, type ScratchBridge } from '@/utils/scratchBridge'
@@ -168,13 +168,12 @@ const isNewProject = computed(() => !route.params.id || route.params.id === 'new
 /**
  * Scratch 编辑器 URL
  *
- * 核心修复：使用 turbowarp.org/editor（完整编辑器，含积木区/角色区/舞台）
- * 而非 turbowarp.org/embed（仅播放器/预览）
+ * 使用 turbowarp.org/embed（iframe 专用页面，支持完整编辑器功能）。
+ * 通过 postMessage 桥接协议可在播放器/编辑器模式间切换。
  *
- * 对于已有项目，通过 ?project_url= 参数传入 sb3 文件的公开下载地址，
- * TurboWarp 会在加载时自动拉取并还原项目。
+ * 对于已有项目，通过 ?project_url= 参数传入 sb3 presigned URL（MinIO 直接访问，无需 CORS）。
  */
-const editorUrl = ref('https://turbowarp.org/editor')
+const editorUrl = ref('about:blank')
 
 /**
  * 加载项目信息 + 构建编辑器 URL
@@ -194,8 +193,8 @@ async function loadProject() {
       projectDescription.value = res.data.description || ''
       projectTags.value = res.data.tags || ''
 
-      // 构建带 project_url 的编辑器 URL
-      buildEditorUrl()
+      // 构建带 project_url 的编辑器 URL（异步获取 presigned URL）
+      await buildEditorUrl()
     }
   } catch (e) {
     ElMessage.error(t('editor.loadFailed'))
@@ -206,21 +205,32 @@ async function loadProject() {
 
 /**
  * 构建编辑器 URL
- * 使用 TurboWarp 的 ?project_url= 参数加载 sb3 文件
- * 后端 /api/v1/project/{id}/sb3/download 端点返回 sb3 文件流（CORS 友好，无需登录）
+ *
+ * 使用 TurboWarp embed 页面 + presigned URL 加载 sb3 文件。
+ * presigned URL 直接指向 MinIO，无需 CORS 配置。
+ * 通过 postMessage 可切换播放器/编辑器模式。
  */
-function buildEditorUrl() {
+async function buildEditorUrl() {
   if (!project.value) return
 
-  const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
-
   if (project.value.sb3Url) {
-    // 有 sb3 文件：通过 project_url 参数加载到编辑器
-    editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(downloadUrl)}`
-    logger.log('编辑器 URL（含 project_url）:', editorUrl.value)
+    try {
+      const res = await getPresignedUrl(project.value.id)
+      if (res.code === 0 && res.data) {
+        editorUrl.value = `https://turbowarp.org/embed?project_url=${encodeURIComponent(res.data)}&autostart=false`
+        logger.log('编辑器 URL（presigned）:', editorUrl.value)
+        return
+      }
+    } catch (e) {
+      logger.warn('获取 presigned URL 失败，回退到直接下载:', e)
+    }
+    // 回退：使用后端直接下载端点
+    const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
+    editorUrl.value = `https://turbowarp.org/embed?project_url=${encodeURIComponent(downloadUrl)}&autostart=false`
+    logger.log('编辑器 URL（回退）:', editorUrl.value)
   } else {
-    // 无 sb3 文件：打开空白编辑器
-    editorUrl.value = 'https://turbowarp.org/editor'
+    // 无 sb3 文件：空白 embed
+    editorUrl.value = 'https://turbowarp.org/embed'
     logger.log('编辑器 URL（空白项目）')
   }
 }
@@ -415,7 +425,7 @@ async function handleSb3Import(file: File) {
     if (uploadRes.code === 0) {
       ElMessage.success(t('editor.importSuccess'))
       // 重新构建编辑器 URL 并刷新 iframe
-      buildEditorUrl()
+      await buildEditorUrl()
       if (scratchFrame.value) {
         scratchFrame.value.src = editorUrl.value
       }

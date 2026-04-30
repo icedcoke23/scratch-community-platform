@@ -28,3 +28,12 @@ export const projectApi = {
     return res.data as ApiResponse<void>
   }
 }
+
+/**
+ * 获取 sb3 公开 presigned URL（无需登录，仅已发布项目）
+ * 供 TurboWarp 嵌入使用，避免 CORS 问题
+ */
+export async function getPresignedUrl(projectId: number): Promise<ApiResponse<string>> {
+  const res = await api.get(`/project/${projectId}/sb3/presigned-url`)
+  return res.data as ApiResponse<string>
+}

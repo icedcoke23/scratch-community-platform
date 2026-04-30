@@ -3,7 +3,7 @@
 export { default as api, get, post, put, del, getAbortController, clearAbortController, cancelAllRequests } from './request'
 export { userApi } from './user'
 export { notificationApi } from './notification'
-export { projectApi } from './project'
+export { projectApi, getPresignedUrl } from './project'
 export { socialApi } from './social'
 export { statsApi } from './stats'
 export { problemApi } from './problem'

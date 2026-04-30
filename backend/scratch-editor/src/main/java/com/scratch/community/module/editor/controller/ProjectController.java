@@ -124,6 +124,13 @@ public class ProjectController {
         projectService.streamSb3(id, response);
     }
 
+    @Operation(summary = "获取 sb3 公开 presigned URL",
+               description = "返回 MinIO presigned URL（1小时有效），无需登录。仅限已发布项目。供前端 TurboWarp 嵌入使用，避免 CORS 问题。")
+    @GetMapping("/project/{id}/sb3/presigned-url")
+    public R<String> getPresignedUrl(@PathVariable Long id) {
+        return R.ok(projectService.getPresignedUrl(id));
+    }
+
     @Operation(summary = "发布项目")
     @Idempotent
     @PostMapping("/project/{id}/publish")

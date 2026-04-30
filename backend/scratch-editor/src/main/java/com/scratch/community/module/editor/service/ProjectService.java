@@ -229,6 +229,23 @@ public class ProjectService {
     }
 
     /**
+     * 获取公开 presigned URL（无需登录，仅已发布项目）
+     * <p>供前端 TurboWarp 嵌入使用。返回 MinIO presigned URL（1小时有效），
+     * TurboWarp 直接从 MinIO 拉取 sb3 文件，避免 CORS 问题。
+     */
+    @Transactional(readOnly = true)
+    public String getPresignedUrl(Long projectId) {
+        Project project = getAndCheck(projectId);
+        if (project.getSb3Url() == null) {
+            throw new BizException(ErrorCode.SB3_FORMAT_ERROR.getCode(), "项目未上传 sb3 文件");
+        }
+        if (!"published".equals(project.getStatus())) {
+            throw new BizException(ErrorCode.PROJECT_NO_PERMISSION);
+        }
+        return fileUploadUtils.refreshPresignedUrl(project.getSb3Url(), 1, java.util.concurrent.TimeUnit.HOURS);
+    }
+
+    /**
      * 公开流式下载 sb3 文件（CORS 友好）
      * <p>供 TurboWarp 等外部编辑器通过 project_url 参数加载项目。
      * 仅允许下载已发布项目的 sb3 文件，项目作者可下载自己的任何状态项目。

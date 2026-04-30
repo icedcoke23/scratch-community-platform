@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { getPresignedUrl } from '@/api/project'
 
 const props = withDefaults(defineProps<{
   /** 项目ID */
@@ -104,26 +105,42 @@ const wrapperRef = ref<HTMLDivElement>()
 const loaded = ref(false)
 const loading = ref(false)
 const isFullscreen = ref(false)
+const playerUrl = ref('')
 
 const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 
 /**
- * TurboWarp embed URL（播放器模式，用于预览）
+ * 构建 TurboWarp embed URL
  *
- * 使用 ?project_url= 参数传入 sb3 文件的公开下载地址。
- * 后端 /api/v1/project/{id}/sb3/download 端点返回 sb3 文件流（CORS 友好，无需登录）。
- * TurboWarp 会在加载时自动拉取 sb3 并运行项目。
+ * 使用后端 /api/v1/project/{id}/sb3/presigned-url 获取 MinIO presigned URL，
+ * 然后通过 ?project_url= 传给 TurboWarp。
+ * presigned URL 直接指向 MinIO，无需 CORS 配置，TurboWarp 可直接拉取 sb3 文件。
  */
-const playerUrl = computed(() => {
+async function buildPlayerUrl(): Promise<string> {
   if (!props.projectId) return ''
+  try {
+    const res = await getPresignedUrl(props.projectId)
+    if (res.code === 0 && res.data) {
+      return `https://turbowarp.org/embed?project_url=${encodeURIComponent(res.data)}&autostart=true&controls=${props.showControls ? 'true' : 'false'}`
+    }
+  } catch (e) {
+    console.warn('获取 presigned URL 失败，回退到直接下载链接:', e)
+  }
+  // 回退：使用后端直接下载端点（需要 CORS 配置正确）
   const downloadUrl = `${window.location.origin}/api/v1/project/${props.projectId}/sb3/download`
   return `https://turbowarp.org/embed?project_url=${encodeURIComponent(downloadUrl)}&autostart=true&controls=${props.showControls ? 'true' : 'false'}`
-})
+}
 
-function loadPreview() {
+async function loadPreview() {
   if (!props.projectId) return
   loading.value = true
-  loaded.value = true
+  try {
+    playerUrl.value = await buildPlayerUrl()
+    loaded.value = true
+  } catch (e) {
+    loading.value = false
+    emit('error', '加载预览失败')
+  }
 }
 
 function onLoad() {

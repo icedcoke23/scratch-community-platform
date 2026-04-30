@@ -83,6 +83,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
                         // 项目 sb3 公开下载（供 TurboWarp 等外部编辑器加载）
                         "/api/v1/project/*/sb3/download",
+                        "/api/v1/project/*/sb3/presigned-url",
 
                         // 题目模块 - 未登录可浏览
                         "/api/problem",
