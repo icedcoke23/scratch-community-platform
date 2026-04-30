@@ -111,7 +111,7 @@ const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 /**
  * 构建 Scratch 播放器 URL
  *
- * 使用本地部署的 Scratch 播放器（基于 scratch-gui player.js 构建）。
+ * 使用预编译的 Scratch 播放器（基于 teaching-open 项目的 scratch3 静态文件）。
  * 通过 project_url 参数传递 sb3 文件 URL，由本地播放器加载。
  *
  * 比 TurboWarp 方案的优势：

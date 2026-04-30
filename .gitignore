@@ -44,6 +44,5 @@ docs/DEPLOYMENT_CREDENTIALS.md
 # Sensitive files
 DEPLOYMENT_CREDENTIALS.md
 
-# Scratch editor build artifacts (built in CI via scripts/build-scratch-editor.sh)
+# Scratch editor source (not needed - using pre-built scratch3 files)
 .scratch-gui/
-frontend-vue/public/scratch-editor/

@@ -130,9 +130,6 @@ jobs:
           cd frontend-vue
           npm ci
 
-      - name: Build Scratch editor (scratch-gui)
-        run: bash scripts/build-scratch-editor.sh
-
       - name: Build frontend
         run: |
           cd frontend-vue
