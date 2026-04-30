@@ -121,6 +121,17 @@
       if (text) text.textContent = '加载失败';
     }
 
+    // ==================== 项目加载成功后的通用处理 ====================
+    function onProjectReady() {
+      if (projectLoaded) return;
+      projectLoaded = true;
+      hideLoading();
+      if (!projectLoadedSent) {
+        projectLoadedSent = true;
+        postToParent('project-loaded', {});
+      }
+    }
+
     // ==================== Scratch 配置 - 完整原版配置 ====================
     window.scratchConfig = {
       session: {
@@ -138,7 +149,7 @@
       },
       projectInfo: {
         projectName: params.get('project_name') || '',
-        authorUsername: '',
+        authorUsername: params.get('author') || '',
         authorAvatar: './static/avatar.png',
       },
       logo: {
@@ -223,30 +234,22 @@
         }
 
         postToParent('vm-initialized', {});
-
-        if (projectUrl && !projectLoaded) {
-          log('VM 就绪，开始加载项目...');
-          safeLoadProject(projectUrl);
-        }
       },
       handleProjectLoaded: function() {
-        if (projectLoaded) return;
-        projectLoaded = true;
-        log('作品载入完毕');
-        hideLoading();
-        if (!projectLoadedSent) {
-          projectLoadedSent = true;
-          postToParent('project-loaded', {});
-        }
+        log('handleProjectLoaded 触发');
       },
       handleDefaultProjectLoaded: function() {
-        log('默认项目加载完成');
+        log('默认项目加载完成，框架就绪');
         scratchReady = true;
 
-        if (!projectUrl) {
-          projectLoaded = true;
-          hideLoading();
-          postToParent('project-loaded', { isDefault: true });
+        if (projectUrl) {
+          // 有项目 URL：加载用户项目
+          log('开始加载用户项目: ' + projectUrl);
+          safeLoadProject(projectUrl);
+        } else {
+          // 无项目 URL：空白项目，直接就绪
+          log('无项目 URL，使用默认空白项目');
+          onProjectReady();
         }
       },
       defaultProjectURL: "./static/project.sb3",
@@ -291,6 +294,7 @@
             } else {
               log('项目加载成功（原生路径）');
               if (callback) callback();
+              onProjectReady();
             }
           });
         } catch (e) {
@@ -334,6 +338,7 @@
           hideLoading();
           postToParent('project-loaded', { url: url });
           if (callback) callback();
+          onProjectReady();
         })
         .catch(function(e) {
           log('项目加载失败: ' + e.message);
@@ -352,6 +357,8 @@
           if (data.url) {
             log('收到 load-project: ' + data.url);
             projectUrl = data.url;
+            projectLoaded = false;
+            projectLoadedSent = false;
             loadAttempts = 0;
             safeLoadProject(data.url);
           }
@@ -430,17 +437,13 @@
         }
       }, 15000);
 
+      // 超时兜底：30 秒后如果项目仍未加载
       setTimeout(function() {
         if (!projectLoaded) {
-          log('项目加载超时 (20s)，强制隐藏 loading');
-          projectLoaded = true;
-          hideLoading();
-          if (!projectLoadedSent) {
-            projectLoadedSent = true;
-            postToParent('project-loaded', { timeout: true });
-          }
+          log('项目加载超时 (30s)，强制隐藏 loading');
+          onProjectReady();
         }
-      }, 20000);
+      }, 30000);
     });
   </script>
 
