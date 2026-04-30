@@ -1,7 +1,7 @@
 # 📚 文档导航
 
 > Scratch Community Platform 项目文档索引
-> 最后更新：2026-04-29 | 当前版本：v3.6.1
+> 最后更新：2026-04-30 | 当前版本：v3.7.0
 
 ---
 
@@ -10,7 +10,7 @@
 | 文档 | 说明 | 适合谁 |
 |------|------|--------|
 | [项目 README](../README.md) | 项目概览、快速启动、技术架构、API 概览 | 所有人 |
-| [踩坑记录](PITFALLS.md) | **104 条坑 + 129 条经验总结** | 所有开发者 |
+| [踩坑记录](PITFALLS.md) | 104 条坑 + 129 条经验总结 | 所有开发者 |
 | [部署指南](DEPLOYMENT.md) | Docker Compose 一键部署 + 环境变量配置 | 运维/后端 |
 
 ---
@@ -43,10 +43,10 @@
 
 | 文档 | 日期 | 说明 |
 |------|------|------|
-| [第三轮深度审计](THIRD_DEEP_ANALYSIS.md) | 2026-04-29 | v3.5.0 全面审计 + P0/P1 优化：TraceId/熔断器/线程池监控/幂等性/ErrorCode |
 | [综合分析报告](COMPREHENSIVE_ANALYSIS.md) | 2026-04-25 | 全栈深度分析：架构 / CI / 代码 / 安全 / 数据库 / API / 沙箱 |
 | [全面优化报告](FULL_OPTIMIZATION_REPORT.md) | 2026-04-28 | v3.4.0 优化分析：后端/前端/数据库/安全/测试/文档 |
-| [二次审计报告](SECOND_OPTIMIZATION_AUDIT.md) | 2026-04-28 | v3.4.0 优化后审计：12 项修改清单 + 风险评估 + 兼容性检查 |
+| [二次审计报告](SECOND_OPTIMIZATION_AUDIT.md) | 2026-04-28 | v3.4.0 优化后审计：12 项修改清单 + 风险评估 |
+| [第三轮深度审计](THIRD_DEEP_ANALYSIS.md) | 2026-04-29 | v3.5.0 全面审计 + P0/P1 优化：TraceId/熔断器/线程池监控 |
 
 ---
 
@@ -54,9 +54,9 @@
 
 | 目录 | 说明 |
 |------|------|
-| [archive/audits/](archive/audits/) | 历次审计报告（6 轮审计，28 份报告）— 已归档，仅作历史参考 |
-| [archive/planning/](archive/planning/) | 前期设计文档：需求 / 架构 / 技术选型 / 竞品分析 / 头脑风暴 |
-| [archive/legacy/](archive/legacy/) | 过时文件（如 sprint6_tables.sql） |
+| [archive/audits/](archive/audits/) | 历次审计报告 — 已归档，仅作历史参考 |
+| [archive/planning/](archive/planning/) | 前期设计文档：需求 / 架构 / 技术选型 / 竞品分析 |
+| [archive/legacy/](archive/legacy/) | 过时文件 |
 
 > 归档文档保留作为历史参考，当前架构以 `ADR.md` 和 `COMPREHENSIVE_ANALYSIS.md` 为准。
 

@@ -40,3 +40,6 @@ e2e-results/
 # Secrets
 .env
 application-local.yml
+docs/DEPLOYMENT_CREDENTIALS.md
+# Sensitive files
+DEPLOYMENT_CREDENTIALS.md

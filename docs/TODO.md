@@ -1,10 +1,10 @@
 # 开发待办
 
-> 最后更新：2026-04-29 | 当前版本: v3.6.0
+> 最后更新：2026-04-30 | 当前版本: v3.7.0
 
 ---
 
-## ✅ 已完成（Phase 1-10, Sprint 1-30）
+## ✅ 已完成（Phase 1-14, Sprint 1-31）
 
 <details>
 <summary>点击展开历史 Sprint 记录</summary>
@@ -21,6 +21,7 @@
 - **Phase 11** (v3.4.0): 全面架构优化 — V19 索引 / Token 竞态修复 / 路径遍历防护 / RateLimit 注解
 - **Phase 12** (v3.5.0): 深度优化 — Feed 时间衰减 / Caffeine 缓存 / ErrorBoundary / 类型安全
 - **Phase 13** (v3.6.0): 可观测性与韧性 — TraceId / 线程池监控 / Resilience4j 熔断器 / 幂等性 / ErrorCode
+- **Phase 14** (v3.7.0): 前端大规模增强 — 5 个新页面 / Scratch 预览集成 / 全局动画系统 / 20+ 微交互
 
 </details>
 
