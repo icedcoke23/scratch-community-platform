@@ -93,23 +93,39 @@
       if (text) text.textContent = '加载失败';
     }
 
-    // ==================== 安全调用 window.scratch ====================
+    // ==================== 安全加载项目 ====================
+    // 原理：Scratch VM 没有 window.scratch.loadProject 方法
+    // 需要先 fetch sb3 文件，再调用 window.vm.loadProject(data)
     function safeLoadProject(url, callback) {
-      if (!window.scratch) {
-        console.warn('[ScratchEditor] window.scratch 未就绪，延迟重试...');
+      // 1. 等待 VM 就绪
+      if (!window.vm) {
+        console.warn('[ScratchEditor] window.vm 未就绪，延迟重试...');
         setTimeout(function() { safeLoadProject(url, callback); }, 500);
         return;
       }
-      try {
-        window.scratch.loadProject(url, function() {
+
+      console.log('[ScratchEditor] 开始加载项目:', url);
+
+      // 2. Fetch sb3 文件
+      fetch(url)
+        .then(function(response) {
+          if (!response.ok) throw new Error('下载项目失败: HTTP ' + response.status);
+          return response.arrayBuffer();
+        })
+        .then(function(buffer) {
+          console.log('[ScratchEditor] sb3 下载完成，大小:', buffer.byteLength, 'bytes');
+          // 3. 调用 VM 的 loadProject（接受 ArrayBuffer / JSON string）
+          return window.vm.loadProject(buffer);
+        })
+        .then(function() {
           console.log('[ScratchEditor] 项目加载完成:', url);
           if (callback) callback();
+        })
+        .catch(function(e) {
+          console.error('[ScratchEditor] loadProject 异常:', e);
+          showError('项目加载失败: ' + e.message);
+          postToParent('error', { error: e.message });
         });
-      } catch (e) {
-        console.error('[ScratchEditor] loadProject 异常:', e);
-        showError('项目加载失败: ' + e.message);
-        postToParent('error', { error: e.message });
-      }
     }
 
     // ==================== Scratch 配置 ====================
@@ -220,36 +236,41 @@
           break;
 
         case 'enter-editor':
-          if (window.scratch) {
-            try { window.scratch.setPlayerOnly(false); } catch(e) {}
-          }
+          // 切换到编辑模式 — 通过 postMessage 告知 GUI
+          try {
+            if (window.parent !== window) {
+              window.parent.postMessage({ type: 'editor-mode-changed', mode: 'editor' }, '*');
+            }
+          } catch(e) {}
           break;
 
         case 'enter-player':
-          if (window.scratch) {
-            try { window.scratch.setPlayerOnly(true); } catch(e) {}
-          }
+          try {
+            if (window.parent !== window) {
+              window.parent.postMessage({ type: 'editor-mode-changed', mode: 'player' }, '*');
+            }
+          } catch(e) {}
           break;
 
         case 'set-fullscreen':
-          if (window.scratch && data.fullscreen !== undefined) {
-            try { window.scratch.setFullScreen(data.fullscreen); } catch(e) {}
-          }
+          try {
+            if (data.fullscreen && document.documentElement.requestFullscreen) {
+              document.documentElement.requestFullscreen();
+            } else if (!data.fullscreen && document.fullscreenElement) {
+              document.exitFullscreen();
+            }
+          } catch(e) {}
           break;
 
         case 'set-project-name':
-          if (window.scratch && data.name) {
-            try { window.scratch.setProjectName(data.name); } catch(e) {}
+          // 项目名称在 GUI 标题栏显示，此处只记录
+          if (data.name) {
+            document.title = data.name + ' - Scratch 编辑器';
           }
           break;
 
         case 'get-project-name':
-          if (window.scratch) {
-            try {
-              var name = window.scratch.getProjectName();
-              postToParent('project-name', { name: name });
-            } catch(e) {}
-          }
+          postToParent('project-name', { name: document.title.replace(' - Scratch 编辑器', '') });
           break;
 
         case 'green-flag':

@@ -72,18 +72,30 @@
     }
 
     function safeLoadProject(url, callback) {
-      if (!window.scratch) {
+      // Scratch VM 没有 window.scratch.loadProject，需要 fetch + vm.loadProject
+      if (!window.vm) {
         setTimeout(function() { safeLoadProject(url, callback); }, 500);
         return;
       }
-      try {
-        window.scratch.loadProject(url, function() {
+      console.log('[ScratchPlayer] 开始加载项目:', url);
+      fetch(url)
+        .then(function(response) {
+          if (!response.ok) throw new Error('下载项目失败: HTTP ' + response.status);
+          return response.arrayBuffer();
+        })
+        .then(function(buffer) {
+          console.log('[ScratchPlayer] sb3 下载完成，大小:', buffer.byteLength, 'bytes');
+          return window.vm.loadProject(buffer);
+        })
+        .then(function() {
+          console.log('[ScratchPlayer] 项目加载完成');
           if (callback) callback();
+        })
+        .catch(function(e) {
+          console.error('[ScratchPlayer] loadProject 异常:', e);
+          showError('项目加载失败: ' + e.message);
+          postToParent('error', { error: e.message });
         });
-      } catch (e) {
-        showError('项目加载失败: ' + e.message);
-        postToParent('error', { error: e.message });
-      }
     }
 
     // 播放器配置
