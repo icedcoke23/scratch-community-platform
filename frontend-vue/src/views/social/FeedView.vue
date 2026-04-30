@@ -65,6 +65,14 @@
           <el-radio-button value="latest">🆕 {{ t('feed.latest') }}</el-radio-button>
           <el-radio-button value="hot">🔥 {{ t('feed.hot') }}</el-radio-button>
         </el-radio-group>
+        <el-button 
+          :type="useEnhancedCard ? 'primary' : 'default'" 
+          size="large" 
+          @click="useEnhancedCard = !useEnhancedCard"
+          class="card-toggle-btn"
+        >
+          {{ useEnhancedCard ? '🎨 新版卡片' : '📦 原版卡片' }}
+        </el-button>
       </div>
     </div>
 
@@ -78,7 +86,8 @@
     <EmptyState v-else-if="projects.length === 0 && !loading" icon="🎨" :text="isSearching ? t('common.empty') : t('feed.empty')" />
 
     <div v-else class="project-grid">
-      <ProjectCard
+      <component
+        :is="useEnhancedCard ? ProjectCardEnhanced : ProjectCard"
         v-for="p in projects"
         :key="p.id"
         :project="p"
@@ -105,6 +114,7 @@ import type { Project } from '@/types'
 import { useI18n } from '@/composables/useI18n'
 import { useUserStore } from '@/stores/user'
 import ProjectCard from '@/components/ProjectCard.vue'
+import ProjectCardEnhanced from '@/components/ProjectCardEnhanced.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 import Carousel from '@/components/Carousel.vue'
@@ -119,6 +129,7 @@ const sort = ref('latest')
 const page = ref(1)
 const total = ref(0)
 const hasMore = computed(() => projects.value.length < total.value)
+const useEnhancedCard = ref(false)
 
 // 搜索
 const searchQuery = ref('')
@@ -370,6 +381,17 @@ onUnmounted(() => {
 .sort-group :deep(.el-radio-button__inner) {
   border-radius: 10px;
   font-weight: 600;
+}
+
+.card-toggle-btn {
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .search-hint {
