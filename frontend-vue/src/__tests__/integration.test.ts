@@ -62,7 +62,8 @@ describe('ScratchBridge 集成', () => {
     const bridge = createScratchBridge({ iframe: mockIframe })
     bridge.exportProject()
     // targetOrigin 使用 window.location.origin（mock iframe 无 src 属性）
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'exportProject' }, window.location.origin)
+    // targetOrigin 使用 '*'（同源部署，避免 URL 变化导致消息丢失）
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'exportProject' }, '*')
     bridge.destroy()
   })
 
@@ -76,10 +77,10 @@ describe('ScratchBridge 集成', () => {
     const bridge = createScratchBridge({ iframe: mockIframe })
 
     bridge.enterEditor()
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-editor' }, window.location.origin)
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-editor' }, '*')
 
     bridge.enterPlayer()
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-player' }, window.location.origin)
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-player' }, '*')
 
     bridge.destroy()
   })
