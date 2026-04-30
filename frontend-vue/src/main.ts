@@ -47,20 +47,11 @@ app.directive('lazy', vLazy)
 
 app.mount('#app')
 
-// 注册 Service Worker (PWA)
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Service Worker 注册失败，静默处理
-    })
-  })
-}
-
 // PWA: 注册 Service Worker（仅生产环境）
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Service Worker 注册失败静默处理
+      // Service Worker 注册失败，静默处理
     })
   })
 }
