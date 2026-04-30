@@ -47,6 +47,7 @@
     var projectUrl = params.get('project_url') || '';
     var vmReady = false;
     var projectLoaded = false;
+    var projectLoadedSent = false;
     var loadAttempts = 0;
     var MAX_LOAD_ATTEMPTS = 10;
 
@@ -74,31 +75,70 @@
       if (text) text.textContent = '加载失败';
     }
 
-    // ==================== 完整播放器配置 ====================
+    /**
+     * 加载项目 — 使用 window.scratch.loadProject（原生方式）
+     *
+     * 必须在 handleDefaultProjectLoaded 回调中调用，确保框架完全就绪。
+     */
+    function loadProject(url) {
+      loadAttempts++;
+      log('加载项目 (attempt ' + loadAttempts + '): ' + url);
+
+      if (!window.scratch || typeof window.scratch.loadProject !== 'function') {
+        if (loadAttempts >= MAX_LOAD_ATTEMPTS) {
+          log('window.scratch.loadProject 不可用，超过最大重试次数');
+          showError('播放器初始化失败，请刷新重试');
+          postToParent('error', { error: '播放器初始化超时' });
+          return;
+        }
+        log('window.scratch.loadProject 尚未就绪，500ms 后重试...');
+        setTimeout(function() { loadProject(url); }, 500);
+        return;
+      }
+
+      log('使用 window.scratch.loadProject（原生路径）');
+      try {
+        window.scratch.loadProject(url, function(err) {
+          if (err) {
+            log('项目加载回调错误: ' + err);
+            showError('项目加载失败: ' + err);
+            postToParent('error', { error: '项目加载失败: ' + err });
+          } else {
+            log('项目加载成功');
+            onProjectReady();
+            // 自动运行项目（与 teaching-open player 一致）
+            if (window.vm) {
+              try { window.vm.greenFlag(); } catch(e) {}
+            }
+          }
+        });
+      } catch (e) {
+        log('window.scratch.loadProject 异常: ' + e.message);
+        showError('项目加载异常: ' + e.message);
+        postToParent('error', { error: e.message });
+      }
+    }
+
+    /**
+     * 项目加载成功后的通用处理
+     */
+    function onProjectReady() {
+      if (projectLoaded) return;
+      projectLoaded = true;
+      hideLoading();
+      if (!projectLoadedSent) {
+        projectLoadedSent = true;
+        postToParent('project-loaded', {});
+      }
+    }
+
+    // 播放器配置
     window.scratchConfig = {
-      session: {
-        token: '',
-        username: '',
-      },
-      backpack: {
-        enable: false,
-        api: '',
-      },
-      cloudData: {
-        enable: false,
-        id: '',
-        api: '',
-      },
       projectInfo: {
         projectName: params.get('project_name') || '',
-        authorUsername: '',
-        authorAvatar: './static/avatar.png',
+        authorUsername: params.get('author') || '',
       },
-      logo: {
-        show: false,
-        url: '',
-        handleClickLogo: function() {},
-      },
+      logo: { show: false },
       menuBar: {
         style: { display: 'none' },
         newButton: { show: false },
@@ -106,147 +146,50 @@
         saveFileButton: { show: false },
         turboModeButton: { show: false },
         helpButton: { show: false },
-        languageButton: { show: false, defaultLanguage: 'zh-cn' },
-        myStuff: { show: false, url: '' },
-        userAvatar: { show: false, username: '', avatar: '', handleClick: function() {} },
-        customButtons: [],
+        languageButton: { show: false },
       },
-      blocks: {
-        scale: 0.8,
-        hideCatagorys: [],
-        hideBlocks: [],
-      },
+      blocks: { scale: 1 },
       stageArea: {
         scale: Math.min(window.innerWidth / 480, window.innerHeight / 360),
         width: 480,
         height: 360,
         showControl: true,
         showLoading: false,
-        fullscreenButton: {
-          show: true,
-          handleBeforeSetStageUnFull: function() {
-            var event = new CustomEvent('scratchUnFullScreen');
-            window.parent.document.dispatchEvent(event);
-            return true;
-          },
-          handleBeforeSetStageFull: function() {
-            var event = new CustomEvent('scratchFullScreen');
-            window.parent.document.dispatchEvent(event);
-            setTimeout(function() {
-              window.scratch.setFullScreen(true);
-            }, 100);
-            return false;
-          },
-        },
-        startButton: { show: true, handleBeforeStart: function() { return true; } },
-        stopButton: { show: true, handleBeforeStop: function() { return true; } },
+        fullscreenButton: { show: true },
+        startButton: { show: true },
+        stopButton: { show: true },
       },
+
+      // VM 初始化完成 — 仅保存引用，不加载项目
       handleVmInitialized: function(vm) {
         window.vm = vm;
         vmReady = true;
         log('VM 初始化完成');
         postToParent('vm-initialized', {});
-
-        setTimeout(function() {
-          try { vm.greenFlag(); } catch(e) {}
-        }, 500);
-
-        if (projectUrl && !projectLoaded) {
-          log('VM 就绪，开始加载项目...');
-          safeLoadProject(projectUrl);
-        }
       },
+
+      // 项目加载完成（框架内部调用，包括默认项目）
       handleProjectLoaded: function() {
-        if (projectLoaded) return;
-        projectLoaded = true;
-        log('项目加载完成');
-        hideLoading();
-        postToParent('project-loaded', {});
+        log('handleProjectLoaded 触发');
       },
+
+      // 默认项目加载完成（框架完全就绪，加载用户项目）
       handleDefaultProjectLoaded: function() {
-        log('默认项目加载完成');
-        if (!projectUrl) {
-          projectLoaded = true;
-          hideLoading();
-          postToParent('project-loaded', { isDefault: true });
+        log('默认项目加载完成，框架就绪');
+
+        if (projectUrl) {
+          // 有项目 URL：加载用户项目
+          log('开始加载用户项目: ' + projectUrl);
+          loadProject(projectUrl);
+        } else {
+          // 无项目 URL：使用默认项目，直接就绪
+          log('无项目 URL，使用默认项目');
+          onProjectReady();
         }
-      },
-      defaultProjectURL: "./static/project.sb3",
-      assets: {
-        assetHost: './static',
-        defaultIndex: {
-          sprites: "./static/json_index/sprites.json",
-          costumes: "./static/json_index/costumes.json",
-          backdrops: "./static/json_index/backdrops.json",
-          sounds: "./static/json_index/sounds.json",
-        },
-        handleBeforeSpriteLibraryOpen: function() { return true; },
-        handleBeforeCostumesLibraryOpen: function() { return true; },
-        handleBeforeBackdropsLibraryOpen: function() { return true; },
-        handleBeforeSoundLibraryOpen: function() { return true; },
       },
     };
 
-    function safeLoadProject(url, callback) {
-      loadAttempts++;
-      log('加载项目 (attempt ' + loadAttempts + '): ' + url);
-
-      if (window.scratch && typeof window.scratch.loadProject === 'function') {
-        log('使用 window.scratch.loadProject');
-        try {
-          window.scratch.loadProject(url, function(err) {
-            if (err) {
-              log('原生路径错误: ' + err);
-              loadProjectFallback(url, callback);
-            } else {
-              log('项目加载成功（原生路径）');
-              if (callback) callback();
-            }
-          });
-        } catch (e) {
-          log('原生路径异常: ' + e.message);
-          loadProjectFallback(url, callback);
-        }
-        return;
-      }
-
-      if (window.vm && typeof window.vm.loadProject === 'function') {
-        log('使用 vm.loadProject（兜底）');
-        loadProjectFallback(url, callback);
-        return;
-      }
-
-      if (loadAttempts >= MAX_LOAD_ATTEMPTS) {
-        log('超过最大重试次数');
-        showError('播放器初始化失败，请刷新重试');
-        postToParent('error', { error: '播放器初始化超时' });
-        return;
-      }
-      setTimeout(function() { safeLoadProject(url, callback); }, 500);
-    }
-
-    function loadProjectFallback(url, callback) {
-      log('fetch sb3: ' + url);
-      fetch(url)
-        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
-        .then(function(buf) {
-          log('sb3 下载完成: ' + buf.byteLength + ' bytes');
-          return window.vm.loadProject(buf);
-        })
-        .then(function() {
-          log('项目加载成功（兜底路径）');
-          projectLoaded = true;
-          hideLoading();
-          postToParent('project-loaded', { url: url });
-          if (callback) callback();
-        })
-        .catch(function(e) {
-          log('加载失败: ' + e.message);
-          showError('项目加载失败: ' + e.message);
-          postToParent('error', { error: e.message });
-        });
-    }
-
+    // 监听父窗口消息
     window.addEventListener('message', function(event) {
       var data = event.data;
       if (!data || !data.type) return;
@@ -254,8 +197,10 @@
         case 'load-project':
           if (data.url) {
             projectUrl = data.url;
+            projectLoaded = false;
+            projectLoadedSent = false;
             loadAttempts = 0;
-            safeLoadProject(data.url);
+            loadProject(data.url);
           }
           break;
         case 'green-flag':
@@ -281,11 +226,10 @@
 
       setTimeout(function() {
         if (!projectLoaded) {
-          log('项目加载超时 (20s)');
-          hideLoading();
-          postToParent('project-loaded', { timeout: true });
+          log('项目加载超时 (30s)');
+          onProjectReady();
         }
-      }, 20000);
+      }, 30000);
     });
   </script>
 
