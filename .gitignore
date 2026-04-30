@@ -1,27 +1,11 @@
-```
-# Compiled and build artifacts
-*.class
-*.o
-*.obj
-*.out
-*.dll
-*.so
-*.a
-*.exe
-
 # Dependencies
-node_modules/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.gradle/
 target/
+.m2/
+.gradle/
 
 # Logs and temp files
 *.log
 *.tmp
-*.swp
-*.swo
 
 # Environment
 .env
@@ -32,20 +16,718 @@ target/
 .vscode/
 .idea/
 
-# System files
+# Build artifacts
+*.class
+*.jar
+*.war
+*.ear
+*.so
+*.dll
+*.dylib
+
+# Python artifacts (if any Python in project)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+
+# General temp/cache files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+desktop.ini
+*.tmp
+*.temp
+*.bak
+*.backup
+*.cache
+*.metadata
+*.lock
+*.log
+*.sql
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+*.pid
+*.seed
+*.session
+*.sublime-workspace
+*.tm_properties
+*~
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 
 # Coverage reports
 coverage/
 htmlcov/
-.coverage
+cover/
 
-# Build directories (common in Java projects)
+# Distribution / packaging
+.Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Python virtual environments
-.venv/
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
 venv/
-```
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local configuration file (sdkman)
+.sdkmanrc
+
+# Configuration folder (gradle)
+.config/
+
+# Gradle cache
+.gradle/
+
+# Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# Log
+*.log
+
+# NPM
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Bower
+bower_components/
+
+# Grunt
+Gruntfile.js
+
+# Gulp
+Gulpfile.js
+
+# Webpack
+webpack.config.js
+
+# Browser-sync
+.browser-sync*
+
+# JSHint
+.jshintrc
+
+# ESLint
+.eslintignore
+.eslintrc*
+
+# Babel
+.babelrc*
+.babelignore
+
+# Jest
+.jestrc*
+jest.config.js
+jest.setup.js
+
+# TypeScript
+.tsbuildinfo
+*.tsbuildinfo
+*.tsx
+
+# Vue
+.vuepress/dist
+.vuepress/.cache
+.vuepress/.temp
+
+# Angular
+.angular-cli.json
+.angular/
+
+# React
+.next/
+public/*
+
+# Next.js
+.next
+out/
+
+# Gatsby
+.cache/
+public/
+
+# Svelte
+.svelte-kit/
+
+# Vite
+.dist/
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# Kubernetes
+.kubeconfig
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Ansible
+ansible/roles/
+.ansible-lint
+
+# Chef
+.chef/knife.rb
+chef-repo/
+.kitchen/
+
+# Puppet
+.gitlab-ci.yml
+.rubocop.yml
+
+# SaltStack
+.salt/
+salt/
+
+# Jenkins
+.jenkins/
+jenkins/
+
+# Travis CI
+.travis.yml
+
+# CircleCI
+.circleci/
+
+# GitHub Actions
+.github/workflows/
+
+# AppVeyor
+.appveyor.yml
+
+# Codecov
+.codecov.yml
+
+# Coveralls
+.coveralls.yml
+
+# SonarQube
+.sonar/
+.sonarqube/
+
+# Checkstyle
+checkstyle/
+checkstyle.xml
+
+# PMD
+pmd/
+pmd.xml
+
+# FindBugs
+findbugs/
+findbugs.xml
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+!.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle-wrapper/
+
+# sbt
+target/
+lib_managed/
+src_managed/
+project/project/
+*.sbt
+**/streams/
+**/libexec/
+
+# Leiningen
+target/
+lib/
+classes/
+.checkouts/
+.lein-deps-sum
+.lein-plugins/
+.lein-repl-history
+.repl/
+.lein/
+lein-exec/
+
+# Boot
+target/
+boot/
+.boot/
+build.boot
+
+# Scala
+.libs/
+.project
+.scala_dependencies
+.scaladex
+.bloop/
+metals.sbt
+project/metals.sbt
+
+# Haskell
+dist/
+dist-newstyle/
+cabal.project.local
+cabal.project.local~
+.cabal-sandbox/
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+.hpc/
+.hsenv
+.cabal/config
+cabal-dev/
+*.prof
+*.aux
+*.hp
+*.eventlog
+.stack-work/
+cabal/
+*.gcda
+*.gcno
+*.gcov
+*.lcov
+*.tf
+*.tfvars
+*.auto.tfvars
+*.backup
+*.backup.tf
+*.backup.tfvars
+*.retry
+*.bak
+*.old
+*.orig
+*.rej
+*.~
+*#
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+*.temp
+*.log
+*.cache
+*.metadata
+*.lock
+*.pid
+*.seed
+*.session
+*.sublime-workspace
+*.tm_properties
+*~
+*.sql
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+*.jar
+*.war
+*.ear
+*.so
+*.dll
+*.dylib
+*.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+__pycache__/
+*.egg-info/
+.installed.cfg
+*.egg
+*.egg-info/
+*.py,cover
+coverage/
+htmlcov/
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+.scrapy
+*.mo
+*.pot
+*.log
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+.pybuilder/
+target/
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot
+*.po
+*.mo
+*.log
+*.pot......
