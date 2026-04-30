@@ -119,7 +119,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft, Edit, FullScreen, Check, Download, Loading, Upload
 } from '@element-plus/icons-vue'
-import { projectApi, getPresignedUrl } from '@/api'
+import { projectApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from '@/composables'
 import { createScratchBridge, type ScratchBridge } from '@/utils/scratchBridge'
@@ -168,10 +168,13 @@ const isNewProject = computed(() => !route.params.id || route.params.id === 'new
 /**
  * Scratch 编辑器 URL
  *
- * 使用 turbowarp.org/embed（iframe 专用页面，支持完整编辑器功能）。
- * 通过 postMessage 桥接协议可在播放器/编辑器模式间切换。
+ * TurboWarp 嵌入文档：https://docs.turbowarp.org/embedding
+ * - /embed 页面仅支持 Scratch 项目 ID，不支持 project_url
+ * - project_url 参数仅在 turbowarp.org 主页面生效
+ * - /editor 是主页面的编辑器模式（完整积木区/角色区/舞台）
  *
- * 对于已有项目，通过 ?project_url= 参数传入 sb3 presigned URL（MinIO 直接访问，无需 CORS）。
+ * 方案：使用 turbowarp.org/editor?project_url=<backend_download_url>
+ * 后端下载端点通过 Nginx 代理提供 CORS 头。
  */
 const editorUrl = ref('about:blank')
 
@@ -206,31 +209,25 @@ async function loadProject() {
 /**
  * 构建编辑器 URL
  *
- * 使用 TurboWarp embed 页面 + presigned URL 加载 sb3 文件。
- * presigned URL 直接指向 MinIO，无需 CORS 配置。
- * 通过 postMessage 可切换播放器/编辑器模式。
+ * 使用 turbowarp.org/editor（完整编辑器）+ project_url 参数加载 sb3 文件。
+ * project_url 要求目标 URL 支持 CORS — 通过 Nginx 代理实现。
+ *
+ * TurboWarp 主页面路由：
+ * - turbowarp.org/editor → 完整编辑器（积木区/角色区/舞台）
+ * - turbowarp.org/?project_url=... → 从 URL 加载 sb3
+ * - 两者组合：turbowarp.org/editor?project_url=...
  */
 async function buildEditorUrl() {
   if (!project.value) return
 
   if (project.value.sb3Url) {
-    try {
-      const res = await getPresignedUrl(project.value.id)
-      if (res.code === 0 && res.data) {
-        editorUrl.value = `https://turbowarp.org/embed?project_url=${encodeURIComponent(res.data)}&autostart=false`
-        logger.log('编辑器 URL（presigned）:', editorUrl.value)
-        return
-      }
-    } catch (e) {
-      logger.warn('获取 presigned URL 失败，回退到直接下载:', e)
-    }
-    // 回退：使用后端直接下载端点
+    // 使用后端下载端点（Nginx 代理已配置 CORS 头）
     const downloadUrl = `${window.location.origin}/api/v1/project/${project.value.id}/sb3/download`
-    editorUrl.value = `https://turbowarp.org/embed?project_url=${encodeURIComponent(downloadUrl)}&autostart=false`
-    logger.log('编辑器 URL（回退）:', editorUrl.value)
+    editorUrl.value = `https://turbowarp.org/editor?project_url=${encodeURIComponent(downloadUrl)}`
+    logger.log('编辑器 URL:', editorUrl.value)
   } else {
-    // 无 sb3 文件：空白 embed
-    editorUrl.value = 'https://turbowarp.org/embed'
+    // 无 sb3 文件：空白编辑器
+    editorUrl.value = 'https://turbowarp.org/editor'
     logger.log('编辑器 URL（空白项目）')
   }
 }

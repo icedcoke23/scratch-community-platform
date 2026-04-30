@@ -56,7 +56,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPresignedUrl } from '@/api/project'
 
 const props = withDefaults(defineProps<{
   /** 项目ID */
@@ -110,25 +109,24 @@ const playerUrl = ref('')
 const allowPermissions = 'clipboard-read; clipboard-write; autoplay'
 
 /**
- * 构建 TurboWarp embed URL
+ * 构建 TurboWarp 播放器 URL
  *
- * 使用后端 /api/v1/project/{id}/sb3/presigned-url 获取 MinIO presigned URL，
- * 然后通过 ?project_url= 传给 TurboWarp。
- * presigned URL 直接指向 MinIO，无需 CORS 配置，TurboWarp 可直接拉取 sb3 文件。
+ * TurboWarp 嵌入文档：https://docs.turbowarp.org/embedding
+ * - /embed 页面仅支持 Scratch 项目 ID，不支持 project_url
+ * - project_url 参数仅在主页面 turbowarp.org/?project_url=... 生效
+ * - project_url 要求目标 URL 支持 CORS (Access-Control-Allow-Origin: *)
+ *
+ * 方案：使用后端 /api/v1/project/{id}/sb3/download 端点（Nginx 代理加 CORS 头），
+ * 通过 turbowarp.org 主页面的 project_url 参数加载 sb3 文件。
+ * 添加 is-iframe=true 让 TurboWarp 以精简模式运行。
  */
 async function buildPlayerUrl(): Promise<string> {
   if (!props.projectId) return ''
-  try {
-    const res = await getPresignedUrl(props.projectId)
-    if (res.code === 0 && res.data) {
-      return `https://turbowarp.org/embed?project_url=${encodeURIComponent(res.data)}&autostart=true&controls=${props.showControls ? 'true' : 'false'}`
-    }
-  } catch (e) {
-    console.warn('获取 presigned URL 失败，回退到直接下载链接:', e)
-  }
-  // 回退：使用后端直接下载端点（需要 CORS 配置正确）
+  // 使用后端下载端点（Nginx 代理已配置 CORS 头）
   const downloadUrl = `${window.location.origin}/api/v1/project/${props.projectId}/sb3/download`
-  return `https://turbowarp.org/embed?project_url=${encodeURIComponent(downloadUrl)}&autostart=true&controls=${props.showControls ? 'true' : 'false'}`
+  // turbowarp.org 主页面支持 project_url 参数
+  // 使用 #0 确保不加载 Scratch 项目，只加载 project_url 指定的 sb3
+  return `https://turbowarp.org/?project_url=${encodeURIComponent(downloadUrl)}#0`
 }
 
 async function loadPreview() {
