@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * 管理员 API
  */
@@ -83,6 +85,84 @@ public class AdminController {
     @PostMapping("/user/{id}/enable")
     public R<Void> enableUser(@PathVariable Long id) {
         adminService.enableUser(id);
+        return R.ok();
+    }
+
+    // ==================== 作品管理 ====================
+
+    /**
+     * 作品列表（分页）
+     */
+    @Operation(summary = "作品列表")
+    @RequireRole("ADMIN")
+    @GetMapping("/project")
+    public R<?> listProjects(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return R.ok(adminService.listProjects(keyword, status, page, size));
+    }
+
+    /**
+     * 作品统计
+     */
+    @Operation(summary = "作品统计")
+    @RequireRole("ADMIN")
+    @GetMapping("/project/stats")
+    public R<Map<String, Object>> projectStats() {
+        return R.ok(adminService.getProjectStats());
+    }
+
+    /**
+     * 更新作品状态
+     */
+    @Operation(summary = "更新作品状态")
+    @RequireRole("ADMIN")
+    @PutMapping("/project/{id}/status")
+    public R<Void> updateProjectStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            return R.fail(400, "状态不能为空");
+        }
+        adminService.updateProjectStatus(id, status);
+        return R.ok();
+    }
+
+    /**
+     * 删除作品
+     */
+    @Operation(summary = "删除作品")
+    @RequireRole("ADMIN")
+    @DeleteMapping("/project/{id}")
+    public R<Void> deleteProject(@PathVariable Long id) {
+        adminService.deleteProject(id);
+        return R.ok();
+    }
+
+    // ==================== 评论管理 ====================
+
+    /**
+     * 评论列表（分页）
+     */
+    @Operation(summary = "评论列表")
+    @RequireRole("ADMIN")
+    @GetMapping("/comment")
+    public R<?> listComments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        return R.ok(adminService.listComments(keyword, page, size));
+    }
+
+    /**
+     * 删除评论
+     */
+    @Operation(summary = "删除评论")
+    @RequireRole("ADMIN")
+    @DeleteMapping("/comment/{id}")
+    public R<Void> deleteComment(@PathVariable Long id) {
+        adminService.deleteComment(id);
         return R.ok();
     }
 }

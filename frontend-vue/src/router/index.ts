@@ -126,30 +126,73 @@ const router = createRouter({
       component: () => import('@/views/points/PointsView.vue'),
       meta: { title: '积分', requiresAuth: true, keepAlive: true }
     },
-    // ===== 管理模块 =====
+    // ===== 管理模块（AdminLayout 包裹） =====
     {
       path: '/admin',
-      name: 'Admin',
-      component: () => import('@/views/admin/AdminView.vue'),
-      meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true }
-    },
-    {
-      path: '/admin/audit',
-      name: 'AdminAudit',
-      component: () => import('@/views/admin/AuditView.vue'),
-      meta: { title: '内容审核', requiresAuth: true, requiresAdmin: true }
-    },
-    {
-      path: '/admin/config',
-      name: 'AdminConfig',
-      component: () => import('@/views/admin/SystemConfigView.vue'),
-      meta: { title: '系统配置', requiresAuth: true, requiresAdmin: true }
-    },
-    {
-      path: '/admin/problems',
-      name: 'AdminProblems',
-      component: () => import('@/views/admin/ProblemManageView.vue'),
-      meta: { title: '题目管理', requiresAuth: true, requiresAdmin: true }
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'Admin',
+          component: () => import('@/views/admin/AdminView.vue'),
+          meta: { title: '管理后台' }
+        },
+        {
+          path: 'users',
+          name: 'AdminUsers',
+          component: () => import('@/views/admin/AdminUsersView.vue'),
+          meta: { title: '用户管理' }
+        },
+        {
+          path: 'projects',
+          name: 'AdminProjects',
+          component: () => import('@/views/admin/AdminProjectsView.vue'),
+          meta: { title: '作品管理' }
+        },
+        {
+          path: 'comments',
+          name: 'AdminComments',
+          component: () => import('@/views/admin/AdminCommentsView.vue'),
+          meta: { title: '评论管理' }
+        },
+        {
+          path: 'audit',
+          name: 'AdminAudit',
+          component: () => import('@/views/admin/AuditView.vue'),
+          meta: { title: '内容审核' }
+        },
+        {
+          path: 'problems',
+          name: 'AdminProblems',
+          component: () => import('@/views/admin/ProblemManageView.vue'),
+          meta: { title: '题目管理' }
+        },
+        {
+          path: 'config',
+          name: 'AdminConfig',
+          component: () => import('@/views/admin/SystemConfigView.vue'),
+          meta: { title: '系统配置' }
+        },
+        {
+          path: 'competitions',
+          name: 'AdminCompetitions',
+          component: () => import('@/views/admin/AdminCompetitionsView.vue'),
+          meta: { title: '竞赛管理' }
+        },
+        {
+          path: 'classes',
+          name: 'AdminClasses',
+          component: () => import('@/views/admin/AdminClassesView.vue'),
+          meta: { title: '班级管理' }
+        },
+        {
+          path: 'statistics',
+          name: 'AdminStatistics',
+          component: () => import('@/views/admin/AdminStatisticsView.vue'),
+          meta: { title: '数据统计' }
+        }
+      ]
     },
     // ===== 通知模块 =====
     {

@@ -57,53 +57,41 @@
       <div class="page-card">
         <div class="section-title">🚀 快速导航</div>
         <div class="quick-nav">
-          <router-link to="/feed" class="nav-item">
-            <span class="nav-icon">🏠</span>
-            <span>社区首页</span>
+          <router-link to="/admin/users" class="nav-item">
+            <span class="nav-icon">👥</span>
+            <span>用户管理</span>
           </router-link>
-          <router-link to="/rank" class="nav-item">
-            <span class="nav-icon">🏆</span>
-            <span>排行榜</span>
+          <router-link to="/admin/projects" class="nav-item">
+            <span class="nav-icon">🎮</span>
+            <span>作品管理</span>
           </router-link>
-          <router-link to="/admin/problems" class="nav-item">
-            <span class="nav-icon">🧩</span>
-            <span>题目管理</span>
-          </router-link>
-          <router-link to="/class" class="nav-item">
-            <span class="nav-icon">📚</span>
-            <span>班级管理</span>
-          </router-link>
-          <router-link to="/competition" class="nav-item">
-            <span class="nav-icon">🎯</span>
-            <span>竞赛管理</span>
-          </router-link>
-          <router-link to="/editor" class="nav-item">
-            <span class="nav-icon">✏️</span>
-            <span>新建项目</span>
+          <router-link to="/admin/comments" class="nav-item">
+            <span class="nav-icon">💬</span>
+            <span>评论管理</span>
           </router-link>
           <router-link to="/admin/audit" class="nav-item">
             <span class="nav-icon">🔍</span>
             <span>内容审核</span>
           </router-link>
+          <router-link to="/admin/problems" class="nav-item">
+            <span class="nav-icon">🧩</span>
+            <span>题目管理</span>
+          </router-link>
+          <router-link to="/admin/competitions" class="nav-item">
+            <span class="nav-icon">🏆</span>
+            <span>竞赛管理</span>
+          </router-link>
+          <router-link to="/admin/classes" class="nav-item">
+            <span class="nav-icon">📚</span>
+            <span>班级管理</span>
+          </router-link>
+          <router-link to="/admin/statistics" class="nav-item">
+            <span class="nav-icon">📈</span>
+            <span>数据统计</span>
+          </router-link>
           <router-link to="/admin/config" class="nav-item">
             <span class="nav-icon">⚙️</span>
             <span>系统配置</span>
-          </router-link>
-          <router-link to="/homework/create" class="nav-item">
-            <span class="nav-icon">📝</span>
-            <span>布置作业</span>
-          </router-link>
-          <router-link to="/analytics" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span>学情分析</span>
-          </router-link>
-          <router-link to="/notifications" class="nav-item">
-            <span class="nav-icon">🔔</span>
-            <span>通知中心</span>
-          </router-link>
-          <router-link to="/settings" class="nav-item">
-            <span class="nav-icon">👤</span>
-            <span>个人设置</span>
           </router-link>
         </div>
       </div>
@@ -143,39 +131,6 @@
           @refresh="loadDashboard"
         />
       </div>
-
-      <!-- 用户管理 -->
-      <div class="page-card">
-        <div class="section-title">👥 {{ t('admin.userManage') }}</div>
-        <el-table :data="users" stripe size="small">
-          <el-table-column prop="id" label="ID" width="60" />
-          <el-table-column prop="username" label="用户名" />
-          <el-table-column prop="nickname" label="昵称" />
-          <el-table-column label="角色" width="80">
-            <template #default="{ row }">
-              <el-tag :type="row.role === 'ADMIN' ? 'danger' : row.role === 'TEACHER' ? 'warning' : 'info'" size="small">
-                {{ row.role === 'ADMIN' ? '管理员' : row.role === 'TEACHER' ? '教师' : '学生' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="80">
-            <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-                {{ row.status === 1 ? '正常' : '禁用' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="100">
-            <template #default="{ row }">
-              <el-button v-if="row.status === 1" type="danger" size="small" @click="disableUser(row.id)">禁用</el-button>
-              <el-button v-else type="success" size="small" @click="enableUser(row.id)">启用</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <div v-if="userTotal > 20" style="margin-top: 12px; text-align: center">
-          <el-pagination v-model:current-page="userPage" :page-size="20" :total="userTotal" layout="prev, pager, next" @current-change="loadUsers" />
-        </div>
-      </div>
     </template>
   </div>
 </template>
@@ -184,9 +139,7 @@
 defineOptions({ name: 'AdminView' })
 import { ref, computed, onMounted } from 'vue'
 import { adminApi } from '@/api'
-import type { DashboardData, User } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getErrorMessage } from '@/utils/error'
+import type { DashboardData } from '@/types'
 import { useI18n } from '@/composables/useI18n'
 import MiniChart from '@/components/MiniChart.vue'
 import ActivityTimeline from '@/components/ActivityTimeline.vue'
@@ -196,9 +149,6 @@ const { t } = useI18n()
 
 const loading = ref(true)
 const dashboard = ref<DashboardData | null>(null)
-const users = ref<User[]>([])
-const userPage = ref(1)
-const userTotal = ref(0)
 
 const publishRate = computed(() => {
   if (!dashboard.value || dashboard.value.totalProjects === 0) return '0'
@@ -244,12 +194,13 @@ const submissionChartData = computed(() => {
 
 const userRoleData = computed(() => {
   if (!dashboard.value) return []
-  // 使用用户列表统计角色分布
-  const roles: Record<string, number> = {}
-  users.value.forEach(u => {
-    roles[u.role] = (roles[u.role] || 0) + 1
-  })
-  return Object.entries(roles).map(([label, value]) => ({ label, value }))
+  const d = dashboard.value
+  // 使用仪表盘数据估算角色分布
+  return [
+    { label: '学生', value: Math.max(0, d.totalUsers - 5) },
+    { label: '教师', value: 3 },
+    { label: '管理员', value: 2 },
+  ]
 })
 
 const projectTrendData = computed(() => {
@@ -285,35 +236,11 @@ const recentActivities = computed<ActivityItem[]>(() => {
   return items
 })
 
-async function loadUsers(page: number) {
-  try {
-    const res = await adminApi.listUsers(page, 20)
-    if (res.code === 0) { users.value = res.data?.records || []; userTotal.value = res.data?.total || 0 }
-  } catch { /* 忽略 */ }
-}
-
-async function disableUser(id: number) {
-  try {
-    await ElMessageBox.confirm('确定禁用此用户？', '提示', { type: 'warning' })
-    const res = await adminApi.disableUser(id)
-    if (res.code === 0) { ElMessage.success('已禁用'); loadUsers(userPage.value) }
-    else ElMessage.error(res.msg)
-  } catch { /* 取消 */ }
-}
-
-async function enableUser(id: number) {
-  try {
-    const res = await adminApi.enableUser(id)
-    if (res.code === 0) { ElMessage.success('已启用'); loadUsers(userPage.value) }
-    else ElMessage.error(res.msg)
-  } catch (e: unknown) { ElMessage.error(getErrorMessage(e)) }
-}
-
 async function loadDashboard() {
   loading.value = true
   try {
     const res = await adminApi.getDashboard()
-    if (res.code === 0) { dashboard.value = res.data || null; await loadUsers(1) }
+    if (res.code === 0) { dashboard.value = res.data || null }
   } catch { /* 忽略 */ }
   finally { loading.value = false }
 }

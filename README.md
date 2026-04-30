@@ -37,6 +37,7 @@
 | 💰 **积分体系** | 5 种积分规则、等级系统、签到、排行榜（时间衰减） | ✅ | v3.6.0 |
 | 👥 **社区互动** | 发布/浏览、点赞/评论、Feed 流、排行榜、**快速预览** | ✅ | v3.7.0 |
 | 🔧 **系统管理** | 内容审核、用户管理、通知系统、**系统配置管理** | ✅ | v3.7.0 |
+| 🖥️ **后台管理** | **AdminLayout 侧边栏**、用户/作品/评论/竞赛/班级管理、数据统计 | ✅ | **v3.8.0** |
 | 📱 **移动端** | 响应式适配（768px/480px 断点）、底部 Tab 导航 | ✅ | v3.6.0 |
 | 🔒 **安全架构** | JWT 双令牌、滑动窗口限流、路径遍历防护、幂等性 | ✅ | v3.6.0 |
 
@@ -101,7 +102,7 @@ frontend-vue/src/
 │   ├── editor/          # Scratch 编辑器
 │   ├── judge/           # 判题系统（题库/竞赛/详情）
 │   ├── classroom/       # 教学管理（班级/作业/学情分析）
-│   ├── admin/           # 管理后台（仪表盘/审核/配置/题目管理）
+│   ├── admin/           # 管理后台（AdminLayout + 仪表盘/用户/作品/评论/审核/题目/竞赛/班级/统计/配置）
 │   ├── points/          # 积分系统
 │   └── collab/          # 协作编辑
 ├── stores/              # Pinia 状态管理
@@ -196,6 +197,14 @@ npm run build  # 生产构建
 | AI | `GET /api/v1/ai-review/project/{id}/stream` | SSE 流式点评 |
 | 通知 | `GET /api/v1/notification` | 通知列表 |
 | 管理 | `GET /api/v1/admin/dashboard` | 管理仪表盘 |
+| 管理 | `GET /api/v1/admin/user` | 用户列表 |
+| 管理 | `PUT /api/v1/admin/user/{id}` | 更新用户 |
+| 管理 | `GET /api/v1/admin/project` | 作品列表 |
+| 管理 | `GET /api/v1/admin/project/stats` | 作品统计 |
+| 管理 | `PUT /api/v1/admin/project/{id}/status` | 更新作品状态 |
+| 管理 | `DELETE /api/v1/admin/project/{id}` | 删除作品 |
+| 管理 | `GET /api/v1/admin/comment` | 评论列表 |
+| 管理 | `DELETE /api/v1/admin/comment/{id}` | 删除评论 |
 | 管理 | `GET /api/v1/admin/audit` | 内容审核列表 |
 | 管理 | `GET /api/v1/admin/config` | 系统配置 |
 | 健康 | `GET /api/health` | 健康检查 |

@@ -3,8 +3,9 @@
     <!-- 路由加载进度条（Vue 组件化，替代原 DOM 操作方案） -->
     <RouteLoadingBar />
     <div class="app-layout">
-      <!-- 顶部导航 -->
+      <!-- 顶部导航（管理后台有自己的布局，不显示） -->
       <AppHeader
+        v-if="!isAdminRoute"
         :nav-links="navLinks"
         :current-path="route.path"
         :is-logged-in="userStore.isLoggedIn"
@@ -21,7 +22,7 @@
       />
 
       <!-- 主内容（keep-alive 缓存高频页面 + 路由切换动画） -->
-      <main class="app-main">
+      <main :class="['app-main', { 'admin-main-wrapper': isAdminRoute }]">
         <ErrorBoundary>
           <router-view v-slot="{ Component, route: currentRoute }">
             <transition name="fade-slide" mode="out-in">
@@ -33,8 +34,9 @@
         </ErrorBoundary>
       </main>
 
-      <!-- 移动端底部导航 -->
+      <!-- 移动端底部导航（管理后台不显示） -->
       <MobileNav
+        v-if="!isAdminRoute"
         :links="mobileNavLinks"
         :current-path="route.path"
       />
@@ -45,8 +47,8 @@
         @login-success="onLoginSuccess"
       />
 
-      <!-- 全局浮动创建按钮 -->
-      <CreateProjectFab v-if="userStore.isLoggedIn && route.path !== '/editor'" />
+      <!-- 全局浮动创建按钮（管理后台不显示） -->
+      <CreateProjectFab v-if="userStore.isLoggedIn && route.path !== '/editor' && !isAdminRoute" />
     </div>
   </el-config-provider>
 </template>
@@ -88,6 +90,9 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
+
+// 判断是否为管理后台路由（使用独立布局）
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 // 未读通知数（从 store 获取）
 const unreadCount = computed(() => notificationStore.unreadCount)
@@ -424,6 +429,14 @@ body {
   margin: 0 auto;
   padding: 24px;
   min-height: calc(100vh - 64px);
+}
+
+/* 管理后台使用独立布局，不需要默认的 max-width 和 padding */
+.app-main.admin-main-wrapper {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
 /* --- 移动端底部导航 --- */
