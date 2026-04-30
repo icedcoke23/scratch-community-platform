@@ -86,6 +86,18 @@ export interface BridgeOptions {
   debug?: boolean
 }
 
+const TURBOWARP_ORIGINS = [
+  'https://turbowarp.org',
+  'http://localhost:8080',
+  'http://localhost:3000'
+]
+
+function isAllowedOrigin(origin: string): boolean {
+  return TURBOWARP_ORIGINS.some(allowed =>
+    origin === allowed || origin.startsWith(allowed + '/')
+  )
+}
+
 export class ScratchBridge {
   private iframe: HTMLIFrameElement | null
   private callbacks: BridgeCallbacks
@@ -108,7 +120,16 @@ export class ScratchBridge {
       const data = event.data
 
       if (!data || typeof data !== 'object') return
-      if (event.source !== (this.iframe?.contentWindow ?? null)) return
+
+      if (!isAllowedOrigin(event.origin)) {
+        console.warn('[ScratchBridge] 收到未知来源的消息:', event.origin)
+        return
+      }
+
+      if (event.source !== (this.iframe?.contentWindow ?? null)) {
+        console.warn('[ScratchBridge] 消息来源与预期 iframe 不匹配')
+        return
+      }
 
       this.debug && console.debug('[ScratchBridge] Received:', data)
 
@@ -234,8 +255,25 @@ export class ScratchBridge {
       return
     }
 
+    const targetOrigin = this.getTargetOrigin()
+    if (!targetOrigin) {
+      this.debug && console.warn('[ScratchBridge] Cannot determine target origin')
+      return
+    }
+
     this.debug && console.debug('[ScratchBridge] Sending:', message)
-    this.iframe.contentWindow.postMessage(message, '*')
+    this.iframe.contentWindow.postMessage(message, targetOrigin)
+  }
+
+  private getTargetOrigin(): string {
+    if (!this.iframe?.src) return '*'
+
+    try {
+      const iframeUrl = new URL(this.iframe.src)
+      return iframeUrl.origin
+    } catch {
+      return '*'
+    }
   }
 
   play() {
