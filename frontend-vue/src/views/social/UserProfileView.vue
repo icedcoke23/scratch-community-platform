@@ -157,7 +157,8 @@ const avatarLetter = computed(() => (userProfile.value?.nickname || userProfile.
 
 const roleLabel: Record<string, string> = { STUDENT: '学生', TEACHER: '教师', ADMIN: '管理员' }
 function roleType(role: string) {
-  return ({ ADMIN: 'danger', TEACHER: 'warning' } as Record<string, string>[role]) || 'info'
+  const map: Record<string, 'danger' | 'warning' | 'info'> = { ADMIN: 'danger', TEACHER: 'warning' }
+  return map[role] || 'info'
 }
 
 const totalProjects = computed(() => total.value)
@@ -206,19 +207,21 @@ async function toggleFollow() {
   followLoading.value = true
   try {
     if (isFollowing.value) {
-      await fetch(`/api/v1/user/${userId}/follow`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${userStore.token}` }
-      })
-      isFollowing.value = false
-      ElMessage.success('已取消关注')
+      const res = await userApi.unfollowUser(userId)
+      if (res.code === 0) {
+        isFollowing.value = false
+        ElMessage.success('已取消关注')
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
     } else {
-      await fetch(`/api/v1/user/${userId}/follow`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${userStore.token}` }
-      })
-      isFollowing.value = true
-      ElMessage.success('关注成功')
+      const res = await userApi.followUser(userId)
+      if (res.code === 0) {
+        isFollowing.value = true
+        ElMessage.success('关注成功')
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
     }
   } catch { ElMessage.error('操作失败') }
   finally { followLoading.value = false }

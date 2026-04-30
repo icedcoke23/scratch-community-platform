@@ -26,7 +26,9 @@ export const projectApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     return res.data as ApiResponse<void>
-  }
+  },
+  autoSaveSb3: (id: number, data: string) =>
+    post<void>(`/project/${id}/sb3/auto-save`, { data })
 }
 
 /**

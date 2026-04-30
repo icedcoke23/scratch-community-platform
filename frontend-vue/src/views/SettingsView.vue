@@ -212,7 +212,7 @@ async function loadProfile() {
     const res = await userApi.getMyInfo()
     if (res.code === 0 && res.data) {
       form.value.nickname = res.data.nickname || ''
-      form.value.email = (res.data as any).email || ''
+      form.value.email = (res.data as Record<string, unknown>).email as string || ''
       form.value.bio = res.data.bio || ''
     }
   } catch { /* ignore */ }
@@ -229,7 +229,7 @@ async function saveProfile() {
     })
     if (res.code === 0) {
       ElMessage.success('保存成功！')
-      userStore.fetchUser()
+      await userStore.validateToken()
     } else {
       ElMessage.error(res.msg || '保存失败')
     }

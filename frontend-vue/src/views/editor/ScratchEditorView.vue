@@ -309,15 +309,7 @@ async function handleSb3AutoSave(base64Data: string) {
 
   try {
     autoSaving.value = true
-    const response = await fetch(`/api/v1/project/${project.value.id}/sb3/auto-save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({ data: base64Data })
-    })
-    const res = await response.json()
+    const res = await projectApi.autoSaveSb3(project.value.id, base64Data)
     if (res.code === 0) {
       logger.log('sb3 自动保存成功')
     } else {

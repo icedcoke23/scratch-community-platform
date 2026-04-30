@@ -824,23 +824,23 @@ body {
 
 /* 响应式表格 */
 @media (max-width: 768px) {
-  :deep(.el-table) {
+  .el-table {
     font-size: 12px;
   }
-  :deep(.el-table .cell) {
+  .el-table .cell {
     padding: 6px 4px;
   }
-  :deep(.el-dialog) {
+  .el-dialog {
     width: 90% !important;
     margin: 16px auto;
   }
 }
 
 @media (max-width: 480px) {
-  :deep(.el-table) {
+  .el-table {
     font-size: 11px;
   }
-  :deep(.el-form-item__label) {
+  .el-form-item__label {
     font-size: 13px;
   }
 }
@@ -871,7 +871,7 @@ body {
 }
 
 /* 搜索框聚焦增强 */
-.search-input :deep(.el-input__wrapper:focus-within) {
+.search-input .el-input__wrapper:focus-within {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), var(--shadow);
   border-color: var(--primary);
 }

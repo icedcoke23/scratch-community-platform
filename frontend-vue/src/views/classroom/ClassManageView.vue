@@ -109,6 +109,8 @@ import type { ClassRoom, User } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getErrorMessage } from '@/utils/error'
 
+// 注意：以下操作使用 API 模块而非原生 fetch，确保统一的错误处理和 Token 刷新
+
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
@@ -151,21 +153,13 @@ async function handleCreate() {
   }
   creating.value = true
   try {
-    const res = await fetch('/api/v1/class', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify(createForm.value)
-    })
-    const data = await res.json()
-    if (data.code === 0) {
+    const res = await userApi.createClass(createForm.value)
+    if (res.code === 0) {
       ElMessage.success('班级创建成功！')
       createForm.value = { name: '', description: '', grade: '' }
       loadClasses()
     } else {
-      ElMessage.error(data.msg || '创建失败')
+      ElMessage.error(res.msg || '创建失败')
     }
   } catch (e: unknown) {
     ElMessage.error(getErrorMessage(e))
@@ -176,19 +170,13 @@ async function handleJoin() {
   if (!joinCode.value.trim()) return
   joining.value = true
   try {
-    const res = await fetch(`/api/v1/class/join?code=${encodeURIComponent(joinCode.value)}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    const data = await res.json()
-    if (data.code === 0) {
+    const res = await userApi.joinClass(joinCode.value)
+    if (res.code === 0) {
       ElMessage.success('成功加入班级！')
       joinCode.value = ''
       loadClasses()
     } else {
-      ElMessage.error(data.msg || '加入失败')
+      ElMessage.error(res.msg || '加入失败')
     }
   } catch (e: unknown) {
     ElMessage.error(getErrorMessage(e))
@@ -200,12 +188,9 @@ async function viewMembers(cls: ClassRoom) {
   showMembers.value = true
   membersLoading.value = true
   try {
-    const res = await fetch(`/api/v1/class/${cls.id}/members`, {
-      headers: { 'Authorization': `Bearer ${userStore.token}` }
-    })
-    const data = await res.json()
-    if (data.code === 0) {
-      members.value = data.data || []
+    const res = await userApi.getClassMembers(cls.id)
+    if (res.code === 0) {
+      members.value = res.data || []
     }
   } catch { /* ignore */ }
   finally { membersLoading.value = false }
@@ -215,16 +200,12 @@ async function removeMember(uid: number) {
   if (!currentClass.value) return
   try {
     await ElMessageBox.confirm('确定移除此成员？', '提示', { type: 'warning' })
-    const res = await fetch(`/api/v1/class/${currentClass.value.id}/member/${uid}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${userStore.token}` }
-    })
-    const data = await res.json()
-    if (data.code === 0) {
+    const res = await userApi.removeClassMember(currentClass.value.id, uid)
+    if (res.code === 0) {
       ElMessage.success('已移除')
       viewMembers(currentClass.value)
     } else {
-      ElMessage.error(data.msg)
+      ElMessage.error(res.msg)
     }
   } catch { /* cancel */ }
 }
@@ -232,17 +213,13 @@ async function removeMember(uid: number) {
 async function leaveClass(cls: ClassRoom) {
   try {
     await ElMessageBox.confirm(`确定退出「${cls.name}」？`, '提示', { type: 'warning' })
-    // Use remove self
-    const res = await fetch(`/api/v1/class/${cls.id}/member/${userStore.user?.id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${userStore.token}` }
-    })
-    const data = await res.json()
-    if (data.code === 0) {
+    if (!userStore.user) return
+    const res = await userApi.removeClassMember(cls.id, userStore.user.id)
+    if (res.code === 0) {
       ElMessage.success('已退出班级')
       loadClasses()
     } else {
-      ElMessage.error(data.msg)
+      ElMessage.error(res.msg)
     }
   } catch { /* cancel */ }
 }

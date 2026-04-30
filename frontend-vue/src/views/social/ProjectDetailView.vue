@@ -177,7 +177,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { projectApi, socialApi, aiReviewApi } from '@/api'
-import type { ProjectDetail, Comment, AiReview } from '@/types'
+import type { Project, ProjectDetail, Comment, AiReview } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getErrorMessage } from '@/utils/error'
 import { timeAgo } from '@/utils'
@@ -262,7 +262,7 @@ async function doRemix() {
 }
 
 const showRemixDialog = ref(false)
-const remixList = ref<any[]>([])
+const remixList = ref<Project[]>([])
 const remixLoading = ref(false)
 const showShareDialog = ref(false)
 

@@ -123,11 +123,35 @@ import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 
 const { t } = useI18n()
 
+interface PointData {
+  points: number
+  level: number
+  levelName: string
+  progress?: number
+  nextLevelPoints: number
+}
+
+interface PointRankItem {
+  id: number
+  username: string
+  nickname: string
+  points: number
+  level: number
+}
+
+interface PointLogItem {
+  id: number
+  type: string
+  points: number
+  remark?: string
+  createdAt: string
+}
+
 const loading = ref(true)
 const checkinLoading = ref(false)
-const pointData = ref<any>(null)
-const ranking = ref<any[]>([])
-const logs = ref<any[]>([])
+const pointData = ref<PointData | null>(null)
+const ranking = ref<PointRankItem[]>([])
+const logs = ref<PointLogItem[]>([])
 
 const alreadyChecked = computed(() => {
   // 检查今日是否已签到

@@ -67,6 +67,7 @@ defineOptions({ name: 'Rank' })
 
 import { ref, onMounted } from 'vue'
 import { socialApi } from '@/api'
+import type { RankItem } from '@/types'
 import { useI18n } from '@/composables/useI18n'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -74,8 +75,8 @@ import EmptyState from '@/components/EmptyState.vue'
 const { t } = useI18n()
 
 const loading = ref(true)
-const weeklyRank = ref<any[]>([])
-const monthlyRank = ref<any[]>([])
+const weeklyRank = ref<RankItem[]>([])
+const monthlyRank = ref<RankItem[]>([])
 
 function medalClass(index: number): string {
   if (index === 0) return 'medal-gold'
