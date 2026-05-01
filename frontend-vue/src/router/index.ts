@@ -9,7 +9,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/feed'
+      name: 'Home',
+      component: () => import('@/views/social/HomeView.vue'),
+      meta: { title: '首页', keepAlive: true }
     },
     // ===== 社区模块 =====
     {
@@ -17,6 +19,19 @@ const router = createRouter({
       name: 'Feed',
       component: () => import('@/views/social/FeedView.vue'),
       meta: { title: '社区', keepAlive: true }
+    },
+    // ===== 课程模块 =====
+    {
+      path: '/courses',
+      name: 'Courses',
+      component: () => import('@/views/courses/CoursesView.vue'),
+      meta: { title: '课程', keepAlive: true }
+    },
+    {
+      path: '/course/:id',
+      name: 'CourseDetail',
+      component: () => import('@/views/courses/CourseDetailView.vue'),
+      meta: { title: '课程详情' }
     },
     {
       path: '/project/:id',

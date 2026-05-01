@@ -1,0 +1,769 @@
+<template>
+  <div class="home-view">
+    <!-- 轮播图 -->
+    <Carousel
+      :slides="carouselSlides"
+      :autoplay="true"
+      :interval="6000"
+      @button-click="handleCarouselButtonClick"
+    />
+
+    <!-- 多编辑器入口 -->
+    <div class="editor-section">
+      <h2 class="section-title">
+        <span class="title-icon">🎨</span>
+        开始创作
+      </h2>
+      <div class="editor-grid">
+        <div class="editor-card editor-scratch" @click="openEditor('scratch')">
+          <div class="editor-card-inner">
+            <div class="editor-icon">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20logo&image_size=square" alt="Scratch" />
+            </div>
+            <div class="editor-info">
+              <h3>Scratch 3.0</h3>
+              <p>图形化编程编辑器</p>
+              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-card editor-scratchjr" @click="openEditor('scratchjr')">
+          <div class="editor-card-inner">
+            <div class="editor-icon">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20jr%20logo%20for%20kids&image_size=square" alt="ScratchJr" />
+            </div>
+            <div class="editor-info">
+              <h3>ScratchJr</h3>
+              <p>适合幼儿的编程</p>
+              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-card editor-python" @click="openEditor('python')">
+          <div class="editor-card-inner">
+            <div class="editor-icon">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=python%20programming%20logo%20turtle&image_size=square" alt="Python" />
+            </div>
+            <div class="editor-info">
+              <h3>Python Turtle</h3>
+              <p>Python 海龟绘图</p>
+              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-card editor-blockly" @click="openEditor('blockly')">
+          <div class="editor-card-inner">
+            <div class="editor-icon">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=blockly%20visual%20programming%20logo&image_size=square" alt="Blockly" />
+            </div>
+            <div class="editor-info">
+              <h3>Blockly</h3>
+              <p>可视化编程工具</p>
+              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 平台统计 -->
+    <div v-if="stats" class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.totalUsers }}</div>
+            <div class="stat-label">活跃用户</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">🎨</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.publishedProjects }}</div>
+            <div class="stat-label">优质作品</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">📚</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.totalCourses || 42 }}</div>
+            <div class="stat-label">精品课程</div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ stats.totalLikes || 12580 }}</div>
+            <div class="stat-label">点赞总数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 精选作品 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="title-icon">🌟</span>
+          精选作品
+        </h2>
+        <router-link to="/feed" class="more-link">查看更多 →</router-link>
+      </div>
+      <div class="project-grid">
+        <LoadingSkeleton v-if="loadingFeatured" :count="4" variant="card" />
+        <template v-else>
+          <ProjectCardEnhanced
+            v-for="p in featuredProjects"
+            :key="p.id"
+            :project="p"
+            @click="router.push(`/project/${p.id}`)"
+          />
+          <EmptyState v-if="featuredProjects.length === 0" icon="🎨" text="暂无精选作品" />
+        </template>
+      </div>
+    </div>
+
+    <!-- 推荐课程 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="title-icon">📚</span>
+          推荐课程
+        </h2>
+        <router-link to="/courses" class="more-link">查看更多 →</router-link>
+      </div>
+      <div class="course-grid">
+        <div v-for="course in recommendedCourses" :key="course.id" class="course-card" @click="router.push(`/course/${course.id}`)">
+          <div class="course-cover">
+            <img :src="course.cover" :alt="course.title" />
+            <div class="course-tag">{{ course.category }}</div>
+          </div>
+          <div class="course-info">
+            <h3>{{ course.title }}</h3>
+            <p class="course-desc">{{ course.description }}</p>
+            <div class="course-meta">
+              <span class="course-lessons">{{ course.lessons }} 课时</span>
+              <span class="course-students">{{ course.students }} 人学习</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 热门作品排行 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="title-icon">🔥</span>
+          热门排行
+        </h2>
+        <router-link to="/rank" class="more-link">查看更多 →</router-link>
+      </div>
+      <div class="project-grid">
+        <LoadingSkeleton v-if="loadingHot" :count="4" variant="card" />
+        <template v-else>
+          <ProjectCardEnhanced
+            v-for="(p, index) in hotProjects"
+            :key="p.id"
+            :project="p"
+            :rank="index + 1"
+            @click="router.push(`/project/${p.id}`)"
+          />
+          <EmptyState v-if="hotProjects.length === 0" icon="🎨" text="暂无热门作品" />
+        </template>
+      </div>
+    </div>
+
+    <!-- 资讯动态 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="title-icon">📰</span>
+          资讯动态
+        </h2>
+        <router-link to="/news" class="more-link">查看更多 →</router-link>
+      </div>
+      <div class="news-grid">
+        <div v-for="news in newsList" :key="news.id" class="news-card" @click="router.push(`/news/${news.id}`)">
+          <div class="news-cover">
+            <img :src="news.cover" :alt="news.title" />
+          </div>
+          <div class="news-info">
+            <div class="news-date">{{ news.date }}</div>
+            <h3>{{ news.title }}</h3>
+            <p class="news-desc">{{ news.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from '@/composables/useI18n'
+import { useUserStore } from '@/stores/user'
+import { useToast } from '@/composables/useToast'
+import Carousel from '@/components/Carousel.vue'
+import ProjectCardEnhanced from '@/components/ProjectCardEnhanced.vue'
+import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import * as api from '@/api'
+
+const router = useRouter()
+const { t } = useI18n()
+const userStore = useUserStore()
+const { toast } = useToast()
+
+// 轮播图数据
+const carouselSlides = ref([
+  {
+    id: 1,
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20kids%20coding%20colorful%20banner&image_size=landscape_16_9',
+    title: '欢迎来到 Scratch 社区',
+    subtitle: '让每个孩子都能享受到编程的乐趣',
+    buttonText: '开始探索',
+    buttonAction: '/feed'
+  },
+  {
+    id: 2,
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=coding%20course%20education%20banner&image_size=landscape_16_9',
+    title: '精品编程课程',
+    subtitle: '从入门到精通，系统化学习编程',
+    buttonText: '查看课程',
+    buttonAction: '/courses'
+  },
+  {
+    id: 3,
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=programming%20competition%20challenge%20banner&image_size=landscape_16_9',
+    title: '编程竞赛活动',
+    subtitle: '参与竞赛，挑战自我，赢取荣誉',
+    buttonText: '立即参与',
+    buttonAction: '/competition'
+  }
+])
+
+// 统计数据
+const stats = ref({
+  totalUsers: 12580,
+  publishedProjects: 4589,
+  totalProjects: 8920,
+  totalCourses: 42,
+  totalLikes: 12580
+})
+
+// 精选作品
+const featuredProjects = ref<any[]>([])
+const loadingFeatured = ref(true)
+
+// 热门作品
+const hotProjects = ref<any[]>([])
+const loadingHot = ref(true)
+
+// 推荐课程
+const recommendedCourses = ref([
+  {
+    id: 1,
+    title: 'Scratch 入门到精通',
+    description: '从零开始学习 Scratch 图形化编程',
+    category: '入门',
+    lessons: 24,
+    students: 2345,
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20course%20cover%20colorful&image_size=square'
+  },
+  {
+    id: 2,
+    title: 'Python 编程基础',
+    description: '学习 Python 语言和海龟绘图',
+    category: '进阶',
+    lessons: 32,
+    students: 1876,
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=python%20course%20cover%20programming&image_size=square'
+  },
+  {
+    id: 3,
+    title: '游戏开发实战',
+    description: '使用 Scratch 开发精彩小游戏',
+    category: '实战',
+    lessons: 16,
+    students: 987,
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=game%20development%20course%20cover&image_size=square'
+  },
+  {
+    id: 4,
+    title: '动画制作教程',
+    description: '学习使用 Scratch 制作精美动画',
+    category: '创意',
+    lessons: 12,
+    students: 756,
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=animation%20course%20cover%20scratch&image_size=square'
+  }
+])
+
+// 资讯列表
+const newsList = ref([
+  {
+    id: 1,
+    title: 'Scratch 社区 2.0 全新升级',
+    description: '全新界面，更多功能，更优体验',
+    date: '2024-01-15',
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=software%20upgrade%20announcement%20banner&image_size=square'
+  },
+  {
+    id: 2,
+    title: '寒假编程大赛开始报名',
+    description: '参与比赛，赢取丰厚奖品',
+    date: '2024-01-10',
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=programming%20competition%20announcement&image_size=square'
+  },
+  {
+    id: 3,
+    title: '优秀教师招募计划',
+    description: '加入我们，共同推动编程教育',
+    date: '2024-01-05',
+    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=teacher%20recruitment%20program&image_size=square'
+  }
+])
+
+// 处理轮播图按钮点击
+const handleCarouselButtonClick = (slide: any) => {
+  if (slide.buttonAction) {
+    router.push(slide.buttonAction)
+  }
+}
+
+// 打开编辑器
+const openEditor = (type: string) => {
+  switch (type) {
+    case 'scratch':
+      router.push('/editor')
+      break
+    case 'scratchjr':
+      window.open('/scratchjr/home.html', '_blank')
+      break
+    case 'python':
+      window.open('/python/index.html', '_blank')
+      break
+    case 'blockly':
+      window.open('/blockly/index.html', '_blank')
+      break
+    default:
+      toast('编辑器开发中，敬请期待')
+  }
+}
+
+// 加载精选作品
+const loadFeaturedProjects = async () => {
+  try {
+    loadingFeatured.value = true
+    const result = await api.searchProjects({ sort: 'featured', limit: 4 })
+    featuredProjects.value = result.projects
+  } catch (e) {
+    console.error('加载精选作品失败', e)
+    // 使用模拟数据
+    featuredProjects.value = [
+      { id: 1, title: '太空冒险', author: { username: '小创客' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=space%20adventure%20game%20scratch&image_size=square', views: 2568, likes: 342 },
+      { id: 2, title: '数学大挑战', author: { username: '数学达人' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=math%20challenge%20game&image_size=square', views: 1892, likes: 256 },
+      { id: 3, title: '音乐节拍器', author: { username: '小音乐家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=music%20beat%20rhythm%20game&image_size=square', views: 1456, likes: 189 },
+      { id: 4, title: '迷宫探险', author: { username: '探险家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=maze%20adventure%20puzzle%20game&image_size=square', views: 1234, likes: 156 }
+    ]
+  } finally {
+    loadingFeatured.value = false
+  }
+}
+
+// 加载热门作品
+const loadHotProjects = async () => {
+  try {
+    loadingHot.value = true
+    const result = await api.searchProjects({ sort: 'hot', limit: 4 })
+    hotProjects.value = result.projects
+  } catch (e) {
+    console.error('加载热门作品失败', e)
+    // 使用模拟数据
+    hotProjects.value = [
+      { id: 5, title: '愤怒的小鸟', author: { username: '游戏玩家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=angry%20birds%20style%20game&image_size=square', views: 3456, likes: 456 },
+      { id: 6, title: '跑酷大作战', author: { username: '运动健将' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=parkour%20running%20game&image_size=square', views: 2890, likes: 389 },
+      { id: 7, title: '记忆翻牌', author: { username: '记忆大师' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=memory%20card%20matching%20game&image_size=square', views: 2123, likes: 278 },
+      { id: 8, title: '打地鼠', author: { username: '快枪手' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=whack%20a%20mole%20game&image_size=square', views: 1876, likes: 234 }
+    ]
+  } finally {
+    loadingHot.value = false
+  }
+}
+
+onMounted(() => {
+  loadFeaturedProjects()
+  loadHotProjects()
+})
+</script>
+
+<style scoped lang="less">
+.home-view {
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.editor-section {
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.section {
+  padding: 40px 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1a1a2e;
+}
+
+.title-icon {
+  font-size: 32px;
+}
+
+.more-link {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    color: #764ba2;
+  }
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.editor-card {
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  
+  &.editor-scratch {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  }
+  
+  &.editor-scratchjr {
+    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+  }
+  
+  &.editor-python {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+  
+  &.editor-blockly {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  }
+}
+
+.editor-card-inner {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.editor-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  
+  img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+}
+
+.editor-info {
+  h3 {
+    color: white;
+    font-size: 22px;
+    margin: 0 0 8px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  p {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 16px 0;
+  }
+}
+
+.start-btn {
+  border-radius: 50px;
+  padding: 12px 32px;
+  font-weight: 600;
+}
+
+.stats-section {
+  padding: 40px 20px;
+  background: #f8fafc;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.stat-item {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.stat-icon {
+  font-size: 40px;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 800;
+  color: #667eea;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.course-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.course-cover {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.course-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(102, 126, 234, 0.95);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-info {
+  padding: 20px;
+}
+
+.course-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #1a1a2e;
+}
+
+.course-desc {
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-size: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-meta {
+  display: flex;
+  gap: 16px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.news-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.news-cover {
+  width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.news-info {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.news-date {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.news-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.news-desc {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 30px 16px;
+  }
+  
+  .section-title {
+    font-size: 22px;
+  }
+  
+  .editor-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .course-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .news-card {
+    flex-direction: column;
+  }
+  
+  .news-cover {
+    width: 100%;
+    height: 180px;
+  }
+}
+</style>
