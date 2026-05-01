@@ -80,23 +80,29 @@ export class ScratchBridge {
       return
     }
 
-    if (!this.ready || !this.iframe?.contentWindow) {
+    if (!this.iframe?.contentWindow) {
       // 加入消息队列，等 iframe 就绪后发送
       this.messageQueue.push(message)
       console.log('[ScratchBridge] 消息入队（iframe 未就绪）:', message.type)
       return
     }
 
+    // 安全策略：优先使用精确的 origin，降级到 '*'
+    let targetOrigin = '*'
     try {
-      // 安全策略：优先使用精确的 origin
-      const targetOrigin = this.iframe.src 
-        ? new URL(this.iframe.src).origin 
-        : window.location.origin
-      
+      if (this.iframe.src) {
+        targetOrigin = new URL(this.iframe.src).origin
+      } else if (window.location.origin && window.location.origin !== 'null') {
+        targetOrigin = window.location.origin
+      }
+    } catch (e) {
+      // URL 解析失败，使用 '*'
+    }
+
+    try {
       this.iframe.contentWindow.postMessage(message, targetOrigin)
     } catch (e) {
       console.error('[ScratchBridge] postMessage 失败:', e)
-      // 降级到 '*' 作为安全后备
       try {
         this.iframe?.contentWindow?.postMessage(message, '*')
       } catch (e2) {
