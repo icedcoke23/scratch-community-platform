@@ -33,6 +33,7 @@
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.9.1",
     "happy-dom": "^20.9.0",
+    "less": "^4.6.4",
     "typescript": "~6.0.2",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.0.0",

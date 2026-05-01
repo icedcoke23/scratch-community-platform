@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 import { oauthLogin } from '@/api/oauth'
 
 const { t } = useI18n()

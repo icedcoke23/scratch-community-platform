@@ -39,8 +39,8 @@ function getOptions(binding: DirectiveBinding): LazyOptions {
   return binding.value
 }
 
-export const vLazy: Directive<HTMLImageElement, string | LazyOptions> = {
-  mounted(el, binding) {
+const vLazyDirective = {
+  mounted(el, binding: DirectiveBinding<string | LazyOptions>) {
     const options = getOptions(binding)
     
     // 设置占位图
@@ -69,7 +69,7 @@ export const vLazy: Directive<HTMLImageElement, string | LazyOptions> = {
     }
   },
 
-  updated(el, binding) {
+  updated(el, binding: DirectiveBinding<string | LazyOptions>) {
     const options = getOptions(binding)
     const currentSrc = el.getAttribute('src')
     
@@ -88,3 +88,5 @@ export const vLazy: Directive<HTMLImageElement, string | LazyOptions> = {
     }
   }
 }
+
+export const vLazy = vLazyDirective as typeof vLazyDirective & { mounted: Function; updated: Function; unmounted: Function }

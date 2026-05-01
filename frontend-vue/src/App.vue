@@ -70,6 +70,7 @@ import CreateProjectFab from '@/components/CreateProjectFab.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useI18n } from '@/composables/useI18n'
 import { useNavigation } from '@/composables/useNavigation'
+import type { User } from '@/types'
 
 // 需要缓存的页面组件名称（keep-alive，从路由 meta.keepAlive 动态获取）
 const cachedViews = computed(() => {
@@ -111,7 +112,7 @@ function openRegisterDialog() {
 }
 
 // 登录成功回调
-function onLoginSuccess(data: { token: string; userInfo: Record<string, unknown> }) {
+function onLoginSuccess(data: { token: string; userInfo: User }) {
   userStore.setAuth(data.token, data.userInfo)
 }
 

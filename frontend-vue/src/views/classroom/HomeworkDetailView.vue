@@ -214,8 +214,8 @@ const isTeacher = computed(() => userStore.user?.role === 'TEACHER' || userStore
 const hwId = Number(route.params.id)
 
 const statusLabel: Record<string, string> = { draft: '草稿', published: '进行中', closed: '已结束' }
-function statusType(s: string) {
-  return ({ published: 'success', closed: 'info' } as Record<string, string>)[s] || 'warning'
+function statusType(s: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+  return ({ published: 'success', closed: 'info' } as Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'>)[s] || 'warning'
 }
 
 const isOverdue = computed(() => {

@@ -41,6 +41,8 @@ export class ScratchBridge {
   private messageHandler: (event: MessageEvent) => void
   private ready = false
   private vmReady = false
+  private destroyed = false
+  private messageQueue: ScratchMessage[] = []
 
   constructor(options: ScratchHostOptions) {
     this.iframe = options.iframe
@@ -49,6 +51,7 @@ export class ScratchBridge {
   }
 
   start() {
+    if (this.destroyed) return
     window.addEventListener('message', this.messageHandler)
   }
 
@@ -58,41 +61,111 @@ export class ScratchBridge {
 
   setIframe(iframe: HTMLIFrameElement | null) {
     this.iframe = iframe
+    // 如果有排队的消息，发送它们
+    if (this.ready && this.messageQueue.length > 0) {
+      this.flushQueue()
+    }
   }
 
   /**
    * 向 Scratch iframe 发送消息
    *
-   * 安全策略：使用 '*' 作为 targetOrigin。
-   * 原因：iframe 和父窗口同源（同域部署），'*' 不会引入额外安全风险。
-   * 使用具体 origin 反而容易因 URL 变化（端口/协议）导致消息丢失。
+   * 安全策略：优先使用精确的 origin，降级到 '*'
+   * 原因：iframe 和父窗口同源（同域部署），精确 origin 更安全
+   * 使用消息队列：防止在 iframe 未就绪时丢失消息
    */
   private postMessage(message: ScratchMessage) {
-    if (!this.iframe?.contentWindow) {
-      console.warn('[ScratchBridge] iframe 不可用，消息丢弃:', message.type)
+    if (this.destroyed) {
+      console.warn('[ScratchBridge] 已销毁，消息丢弃:', message.type)
       return
     }
+
+    if (!this.iframe?.contentWindow) {
+      // 加入消息队列，等 iframe 就绪后发送
+      this.messageQueue.push(message)
+      console.log('[ScratchBridge] 消息入队（iframe 未就绪）:', message.type)
+      return
+    }
+
+    // 安全策略：优先使用精确的 origin，降级到 '*'
+    let targetOrigin = '*'
     try {
-      this.iframe.contentWindow.postMessage(message, '*')
+      if (this.iframe.src) {
+        targetOrigin = new URL(this.iframe.src).origin
+      } else if (window.location.origin && window.location.origin !== 'null') {
+        targetOrigin = window.location.origin
+      }
+    } catch (e) {
+      // URL 解析失败，使用 '*'
+    }
+
+    try {
+      this.iframe.contentWindow.postMessage(message, targetOrigin)
     } catch (e) {
       console.error('[ScratchBridge] postMessage 失败:', e)
+      try {
+        this.iframe?.contentWindow?.postMessage(message, '*')
+      } catch (e2) {
+        console.error('[ScratchBridge] 降级发送也失败:', e2)
+      }
+    }
+  }
+
+  /**
+   * 刷新消息队列，发送所有排队的消息
+   */
+  private flushQueue() {
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift()
+      if (message) {
+        this.postMessage(message)
+      }
     }
   }
 
   /**
    * 处理来自 Scratch iframe 的消息
    *
-   * 过滤策略：只处理来自 iframe 的消息。
-   * 通过 event.source 判断消息来源，防止处理其他窗口的消息。
+   * 安全策略：
+   * 1. 只处理来自 iframe 的消息
+   * 2. 验证消息来源（event.source）
+   * 3. 验证消息格式（防止 XSS）
+   * 4. 消息内容白名单验证
    */
   private handleMessage(event: MessageEvent) {
+    if (this.destroyed) return
+
     const data = event.data as ScratchMessage
     if (!data?.type) return
 
     // 安全：只处理来自 iframe 的消息（如果 iframe 已加载）
     // event.source 可能为 null（某些浏览器/情况），此时放行
     if (this.iframe?.contentWindow && event.source) {
-      if (event.source !== this.iframe.contentWindow) return
+      if (event.source !== this.iframe.contentWindow) {
+        console.warn('[ScratchBridge] 忽略非 iframe 来源的消息')
+        return
+      }
+    }
+
+    // 安全：验证消息 origin（防止 XSS）
+    const allowedOrigins = [
+      window.location.origin,
+      // 如果 iframe 是其他源，在这里添加白名单
+    ]
+    if (event.origin && !allowedOrigins.includes(event.origin)) {
+      console.warn('[ScratchBridge] 忽略非白名单来源的消息:', event.origin)
+      return
+    }
+
+    // 安全：验证消息类型（白名单）
+    const allowedTypes = [
+      'editor-ready', 'player-ready', 'vm-initialized', 'project-loaded',
+      'project-changed', 'project-save', 'exportProject', 'project-start',
+      'project-stop', 'fullscreen', 'error'
+    ]
+    if (!allowedTypes.includes(data.type)) {
+      console.warn('[ScratchBridge] 忽略未知消息类型:', data.type)
+      return
     }
 
     switch (data.type) {
@@ -101,6 +174,8 @@ export class ScratchBridge {
         this.ready = true
         console.log('[ScratchBridge] 编辑器就绪:', data.type)
         this.options.onReady?.()
+        // 发送排队的消息
+        this.flushQueue()
         break
 
       case 'vm-initialized':
@@ -122,7 +197,13 @@ export class ScratchBridge {
       case 'exportProject': {
         const projectData = data as ScratchProjectData
         if (projectData.data) {
-          this.options.onProjectSave?.(projectData.data)
+          // 安全：验证 base64 格式，防止注入
+          if (typeof projectData.data === 'string' && 
+              projectData.data.startsWith('data:application/x.scratch.sb3;base64,')) {
+            this.options.onProjectSave?.(projectData.data)
+          } else {
+            console.warn('[ScratchBridge] 忽略无效的 sb3 数据格式')
+          }
         }
         break
       }
@@ -136,7 +217,7 @@ export class ScratchBridge {
         break
 
       case 'fullscreen': {
-        const isFull = !!(data as Record<string, unknown>).fullscreen
+        const isFull = !!((data as Record<string, unknown>).fullscreen)
         this.options.onFullscreen?.(isFull)
         break
       }
@@ -170,6 +251,11 @@ export class ScratchBridge {
 
   /** 加载项目（通过 URL） */
   loadProject(url: string) {
+    // 安全：验证 URL 格式
+    if (typeof url !== 'string' || !url) {
+      console.warn('[ScratchBridge] 无效的项目 URL')
+      return
+    }
     this.postMessage({ type: 'load-project', url })
   }
 
@@ -185,7 +271,9 @@ export class ScratchBridge {
 
   /** 设置项目名称 */
   setProjectName(name: string) {
-    this.postMessage({ type: 'set-project-name', name })
+    // 安全：限制名称长度，防止注入
+    const safeName = (name || '').substring(0, 100)
+    this.postMessage({ type: 'set-project-name', name: safeName })
   }
 
   /** 获取项目名称 */
@@ -218,12 +306,19 @@ export class ScratchBridge {
     return this.vmReady
   }
 
+  /** 是否已销毁 */
+  isDestroyed(): boolean {
+    return this.destroyed
+  }
+
   /** 销毁 */
   destroy() {
+    this.destroyed = true
     this.stop()
     this.iframe = null
     this.ready = false
     this.vmReady = false
+    this.messageQueue = []
   }
 }
 

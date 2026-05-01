@@ -42,13 +42,20 @@ export interface CollabEvent {
   sessionId: number
   userId: number
   nickname: string
-  payload: Record<string, unknown>
+  payload?: {
+    role?: 'editor' | 'viewer'
+    version?: number
+    x?: number
+    y?: number
+    message?: string
+    [key: string]: unknown
+  }
   timestamp: number
 }
 
 /** 创建协作会话 */
 export const createCollabSession = (projectId: number) =>
-  post<CollabSession>('/collab/session', undefined, { params: { projectId } })
+  post<CollabSession>('/collab/session', undefined, { projectId })
 
 /** 获取会话状态 */
 export const getCollabSessionState = (sessionId: number) =>

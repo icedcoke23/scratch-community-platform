@@ -102,12 +102,15 @@ const typeLabels: Record<string, string> = {
 }
 
 const projectType = computed(() => {
-  const tags = (props.project.tags || '').toLowerCase()
-  if (tags.includes('动画') || tags.includes('animation')) return 'animation'
-  if (tags.includes('游戏') || tags.includes('game')) return 'game'
-  if (tags.includes('故事') || tags.includes('story')) return 'story'
-  if (tags.includes('音乐') || tags.includes('music')) return 'music'
-  if (tags.includes('美术') || tags.includes('art')) return 'art'
+  const tags = Array.isArray(props.project.tags) 
+    ? props.project.tags.join(',') 
+    : (props.project.tags || '')
+  const lowerTags = tags.toLowerCase()
+  if (lowerTags.includes('动画') || lowerTags.includes('animation')) return 'animation'
+  if (lowerTags.includes('游戏') || lowerTags.includes('game')) return 'game'
+  if (lowerTags.includes('故事') || lowerTags.includes('story')) return 'story'
+  if (lowerTags.includes('音乐') || lowerTags.includes('music')) return 'music'
+  if (lowerTags.includes('美术') || lowerTags.includes('art')) return 'art'
   return null
 })
 
@@ -122,7 +125,11 @@ const authorInitial = computed(() => {
 })
 
 const tagList = computed(() => {
-  return (props.project.tags || '').split(',').filter(t => t.trim()).slice(0, 3)
+  const tags = props.project.tags
+  if (Array.isArray(tags)) {
+    return tags.filter(t => t.trim()).slice(0, 3)
+  }
+  return (tags || '').split(',').filter(t => t.trim()).slice(0, 3)
 })
 
 function tagColorClass(tag: string): string {

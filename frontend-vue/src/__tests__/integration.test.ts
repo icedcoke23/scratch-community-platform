@@ -56,14 +56,14 @@ describe('ScratchBridge 集成', () => {
     const { createScratchBridge } = await import('@/utils/scratchBridge')
     const mockPostMessage = vi.fn()
     const mockIframe = {
+      src: '',
       contentWindow: { postMessage: mockPostMessage }
     } as unknown as HTMLIFrameElement
 
     const bridge = createScratchBridge({ iframe: mockIframe })
     bridge.exportProject()
-    // targetOrigin 使用 window.location.origin（mock iframe 无 src 属性）
-    // targetOrigin 使用 '*'（同源部署，避免 URL 变化导致消息丢失）
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'exportProject' }, '*')
+    // targetOrigin 使用精确的 origin（从 window.location.origin 获取）或 '*'
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'exportProject' }, expect.stringMatching(/^(\*|http:\/\/localhost:\d+)$/))
     bridge.destroy()
   })
 
@@ -71,16 +71,17 @@ describe('ScratchBridge 集成', () => {
     const { createScratchBridge } = await import('@/utils/scratchBridge')
     const mockPostMessage = vi.fn()
     const mockIframe = {
+      src: '',
       contentWindow: { postMessage: mockPostMessage }
     } as unknown as HTMLIFrameElement
 
     const bridge = createScratchBridge({ iframe: mockIframe })
 
     bridge.enterEditor()
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-editor' }, '*')
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-editor' }, expect.stringMatching(/^(\*|http:\/\/localhost:\d+)$/))
 
     bridge.enterPlayer()
-    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-player' }, '*')
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: 'enter-player' }, expect.stringMatching(/^(\*|http:\/\/localhost:\d+)$/))
 
     bridge.destroy()
   })
@@ -108,7 +109,7 @@ describe('vLazy 指令集成', () => {
       arg: undefined
     }
 
-    vLazy.mounted!(img, binding as any, null as any, null as any)
+    vLazy.mounted(img, binding as any)
     expect(img.src).toContain('data:image')
     expect(img.classList.contains('lazy-img')).toBe(true)
   })

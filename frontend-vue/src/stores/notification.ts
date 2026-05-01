@@ -28,9 +28,9 @@ export const useNotificationStore = defineStore('notification', () => {
       const res = await notificationApi.getMyNotifications(pageNum, size)
       if (res.code === 0 && res.data) {
         if (pageNum === 1) {
-          notifications.value = (res.data.records as Notification[]) || []
+          notifications.value = (res.data.records as unknown as Notification[]) || []
         } else {
-          notifications.value.push(...((res.data.records as Notification[]) || []))
+          notifications.value.push(...((res.data.records as unknown as Notification[]) || []))
         }
         total.value = res.data.total || 0
         page.value = pageNum

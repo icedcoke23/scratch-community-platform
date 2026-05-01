@@ -50,6 +50,10 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  function setLogin(newToken: string, newUser: User, newRefreshToken?: string) {
+    setAuth(newToken, newUser, newRefreshToken)
+  }
+
   function logout() {
     token.value = null
     refreshToken.value = null
@@ -93,6 +97,6 @@ export const useUserStore = defineStore('user', () => {
   return {
     token, refreshToken, user,
     isLoggedIn, isAdmin, isTeacher,
-    setAuth, setToken, logout, validateToken
+    setAuth, setLogin, setToken, logout, validateToken
   }
 })

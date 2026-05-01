@@ -101,6 +101,12 @@ export const getMyInfo = () =>
 export const getUserProfile = (id) =>
   request({ url: `/user/${id}/profile` })
 
+// ==================== 搜索 API ====================
+
+/** 搜索项目 */
+export const searchProjects = (keyword, page = 1, size = 20) =>
+  request({ url: '/social/search', data: { keyword, page, size } })
+
 /** 搜索用户 */
 export const searchUsers = (q, page = 1, size = 20) =>
   request({ url: '/user/search', data: { q, page, size } })

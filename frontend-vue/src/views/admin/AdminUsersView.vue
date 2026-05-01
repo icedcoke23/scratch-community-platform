@@ -202,7 +202,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="积分">⭐ {{ detailUser.points || 0 }}</el-descriptions-item>
           <el-descriptions-item label="等级">Lv.{{ detailUser.level || 1 }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱">{{ detailUser.email || '未设置' }}</el-descriptions-item>
+          <el-descriptions-item label="邮箱">{{ (detailUser as { email?: string }).email || '未设置' }}</el-descriptions-item>
           <el-descriptions-item label="简介" :span="2">{{ detailUser.bio || '这个人很懒，什么都没写...' }}</el-descriptions-item>
           <el-descriptions-item label="注册时间" :span="2">{{ formatDate(detailUser.createdAt) }}</el-descriptions-item>
         </el-descriptions>

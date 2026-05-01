@@ -15,7 +15,9 @@ export interface OAuthCallbackResult {
     username: string
     nickname: string
     avatarUrl?: string
-    role: string
+    role: 'STUDENT' | 'TEACHER' | 'ADMIN'
+    status: number
+    createdAt: string
   }
 }
 
