@@ -8,62 +8,23 @@
       @button-click="handleCarouselButtonClick"
     />
 
-    <!-- 多编辑器入口 -->
+    <!-- Scratch 编辑器入口 -->
     <div class="editor-section">
-      <h2 class="section-title">
-        <span class="title-icon">🎨</span>
-        开始创作
-      </h2>
-      <div class="editor-grid">
-        <div class="editor-card editor-scratch" @click="openEditor('scratch')">
-          <div class="editor-card-inner">
-            <div class="editor-icon">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20logo&image_size=square" alt="Scratch" />
-            </div>
-            <div class="editor-info">
-              <h3>Scratch 3.0</h3>
-              <p>图形化编程编辑器</p>
-              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
-            </div>
+      <div class="editor-single-card" @click="openEditor('scratch')">
+        <div class="editor-card-content">
+          <div class="editor-icon-large">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20logo&image_size=square" alt="Scratch" />
           </div>
-        </div>
-
-        <div class="editor-card editor-scratchjr" @click="openEditor('scratchjr')">
-          <div class="editor-card-inner">
-            <div class="editor-icon">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20jr%20logo%20for%20kids&image_size=square" alt="ScratchJr" />
-            </div>
-            <div class="editor-info">
-              <h3>ScratchJr</h3>
-              <p>适合幼儿的编程</p>
-              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
-            </div>
+          <div class="editor-text">
+            <h2>开始创作</h2>
+            <p>使用 Scratch 3.0 图形化编程编辑器</p>
+            <p>拖放代码块，创作动画、游戏和故事</p>
           </div>
-        </div>
-
-        <div class="editor-card editor-python" @click="openEditor('python')">
-          <div class="editor-card-inner">
-            <div class="editor-icon">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=python%20programming%20logo%20turtle&image_size=square" alt="Python" />
-            </div>
-            <div class="editor-info">
-              <h3>Python Turtle</h3>
-              <p>Python 海龟绘图</p>
-              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
-            </div>
-          </div>
-        </div>
-
-        <div class="editor-card editor-blockly" @click="openEditor('blockly')">
-          <div class="editor-card-inner">
-            <div class="editor-icon">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=blockly%20visual%20programming%20logo&image_size=square" alt="Blockly" />
-            </div>
-            <div class="editor-info">
-              <h3>Blockly</h3>
-              <p>可视化编程工具</p>
-              <el-button type="primary" size="large" class="start-btn">开始创作</el-button>
-            </div>
+          <div class="editor-action">
+            <el-button type="primary" size="large" class="start-btn">
+              <span class="btn-icon">✨</span>
+              立即开始
+            </el-button>
           </div>
         </div>
       </div>
@@ -338,21 +299,8 @@ const handleCarouselButtonClick = (slide: any) => {
 
 // 打开编辑器
 const openEditor = (type: string) => {
-  switch (type) {
-    case 'scratch':
-      router.push('/editor')
-      break
-    case 'scratchjr':
-      window.open('/scratchjr/home.html', '_blank')
-      break
-    case 'python':
-      window.open('/python/index.html', '_blank')
-      break
-    case 'blockly':
-      window.open('/blockly/index.html', '_blank')
-      break
-    default:
-      toast('编辑器开发中，敬请期待')
+  if (type === 'scratch') {
+    router.push('/editor')
   }
 }
 
@@ -409,8 +357,93 @@ onMounted(() => {
 }
 
 .editor-section {
-  padding: 40px 20px;
+  padding: 50px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.editor-single-card {
+  max-width: 900px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  border-radius: 30px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+  
+  &:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.editor-card-content {
+  padding: 50px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.editor-icon-large {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  
+  img {
+    width: 75%;
+    height: 75%;
+    object-fit: contain;
+  }
+}
+
+.editor-text {
+  flex: 1;
+  
+  h2 {
+    color: white;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  p {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 18px;
+    margin: 8px 0;
+  }
+}
+
+.editor-action {
+  flex-shrink: 0;
+}
+
+.start-btn {
+  border-radius: 50px;
+  padding: 16px 40px;
+  font-weight: 700;
+  font-size: 18px;
+  background: white;
+  color: #667eea;
+  border: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+    color: #764ba2;
+  }
+  
+  .btn-icon {
+    margin-right: 8px;
+  }
 }
 
 .section {
@@ -447,90 +480,6 @@ onMounted(() => {
   &:hover {
     color: #764ba2;
   }
-}
-
-.editor-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.editor-card {
-  border-radius: 20px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-  }
-  
-  &.editor-scratch {
-    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-  }
-  
-  &.editor-scratchjr {
-    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-  }
-  
-  &.editor-python {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  }
-  
-  &.editor-blockly {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  }
-}
-
-.editor-card-inner {
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.editor-icon {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  
-  img {
-    width: 80%;
-    height: 80%;
-    object-fit: contain;
-  }
-}
-
-.editor-info {
-  h3 {
-    color: white;
-    font-size: 22px;
-    margin: 0 0 8px 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  p {
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0 0 16px 0;
-  }
-}
-
-.start-btn {
-  border-radius: 50px;
-  padding: 12px 32px;
-  font-weight: 600;
 }
 
 .stats-section {
@@ -738,9 +687,24 @@ onMounted(() => {
     font-size: 22px;
   }
   
-  .editor-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 16px;
+  .editor-card-content {
+    flex-direction: column;
+    padding: 40px 30px;
+    text-align: center;
+    gap: 24px;
+  }
+  
+  .editor-icon-large {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .editor-text h2 {
+    font-size: 28px;
+  }
+  
+  .editor-text p {
+    font-size: 16px;
   }
   
   .project-grid {
