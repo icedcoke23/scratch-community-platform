@@ -14,17 +14,17 @@
         <span class="badge-text">精选</span>
       </div>
     </div>
-    
+
     <div class="card-content">
       <h3 class="card-title" :title="project.title">{{ project.title }}</h3>
       <p class="card-description" :title="project.description">{{ project.description || '暂无描述' }}</p>
-      
+
       <div class="card-meta">
         <div class="meta-item author">
           <span class="author-avatar">{{ (project.author?.nickname || project.author?.username || '?')[0].toUpperCase() }}</span>
           <span class="author-name">{{ project.author?.nickname || project.author?.username || '未知作者' }}</span>
         </div>
-        
+
         <div class="meta-stats">
           <span class="stat-item">
             <span class="stat-icon">👁</span>
@@ -40,7 +40,7 @@
           </span>
         </div>
       </div>
-      
+
       <div class="card-tags" v-if="tagArray && tagArray.length > 0">
         <el-tag v-for="(tag, index) in tagArray.slice(0, 3)" :key="index" size="small" class="project-tag">
           {{ tag }}
@@ -273,19 +273,19 @@ function formatNumber(num: number): string {
   .project-card {
     border-radius: 12px;
   }
-  
+
   .card-content {
     padding: 12px;
   }
-  
+
   .card-title {
     font-size: 14px;
   }
-  
+
   .card-description {
     font-size: 12px;
   }
-  
+
   .meta-stats {
     gap: 8px;
   }
