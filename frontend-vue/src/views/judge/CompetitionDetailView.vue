@@ -141,8 +141,8 @@ const statusLabel: Record<string, string> = {
   ENDED: t('competition.status.ended')
 }
 
-function statusType(s: string): 'success' | '' | 'danger' | 'info' {
-  const map: Record<string, 'success' | '' | 'danger'> = { RUNNING: 'success', PUBLISHED: '', ENDED: 'danger' }
+function statusType(s: string): 'primary' | 'success' | 'danger' | 'info' {
+  const map: Record<string, 'primary' | 'success' | 'danger'> = { RUNNING: 'success', PUBLISHED: 'primary', ENDED: 'danger' }
   return map[s] || 'info'
 }
 

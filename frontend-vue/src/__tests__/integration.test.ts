@@ -108,7 +108,7 @@ describe('vLazy 指令集成', () => {
       arg: undefined
     }
 
-    vLazy.mounted!(img, binding as any, null as any, null as any)
+    vLazy.mounted(img, binding as any)
     expect(img.src).toContain('data:image')
     expect(img.classList.contains('lazy-img')).toBe(true)
   })

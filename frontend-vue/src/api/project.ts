@@ -1,5 +1,5 @@
 import { get, post, put, del } from './request'
-import type { Project, ProjectDetail, ApiResponse } from '@/types'
+import type { Project, ProjectDetail, ApiResponse, PageResult } from '@/types'
 import api from './request'
 
 export const projectApi = {
@@ -16,7 +16,7 @@ export const projectApi = {
   remix: (id: number) =>
     post<Project>(`/project/${id}/remix`),
   getRemixes: (id: number, page = 1, size = 20) =>
-    get<Project>(`/project/${id}/remixes`, { page, size }),
+    get<PageResult<Project>>(`/project/${id}/remixes`, { page, size }),
   getSb3Url: (id: number) =>
     get<string>(`/project/${id}/sb3`),
   uploadSb3: async (id: number, file: File): Promise<ApiResponse<void>> => {

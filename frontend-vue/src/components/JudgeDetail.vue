@@ -104,7 +104,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const verdictType = computed(() => {
-  const map: Record<string, string> = {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
     AC: 'success',
     WA: 'danger',
     TLE: 'warning',

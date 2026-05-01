@@ -72,7 +72,7 @@ function formatDateTime(dt: string) {
 async function loadData() {
   loading.value = true
   try {
-    const res = await get('/class', { page: page.value, size: 20 })
+    const res = await get<{ records: any[]; total: number }>('/class', { page: page.value, size: 20 })
     if (res.code === 0) {
       classes.value = res.data?.records || []
       total.value = res.data?.total || 0

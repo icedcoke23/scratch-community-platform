@@ -41,9 +41,6 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    esbuild: {
-      drop: ['console', 'debugger'],
-    },
     rollupOptions: {
       output: {
         manualChunks(id) {

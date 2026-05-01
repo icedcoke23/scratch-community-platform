@@ -212,7 +212,7 @@ async function loadProfile() {
     const res = await userApi.getMyInfo()
     if (res.code === 0 && res.data) {
       form.value.nickname = res.data.nickname || ''
-      form.value.email = (res.data as Record<string, unknown>).email as string || ''
+      form.value.email = (res.data as unknown as { email?: string }).email as string || ''
       form.value.bio = res.data.bio || ''
     }
   } catch { /* ignore */ }

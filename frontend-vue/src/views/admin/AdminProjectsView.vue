@@ -188,8 +188,8 @@ function statusLabel(status: string) {
   return ({ published: '已发布', draft: '草稿', reviewing: '审核中' } as Record<string, string>)[status] || status
 }
 
-function statusTagType(status: string) {
-  return ({ published: 'success', draft: 'info', reviewing: 'warning' } as Record<string, string>)[status] || 'info' as const
+function statusTagType(status: string): 'primary' | 'success' | 'warning' | 'info' | 'danger' {
+  return ({ published: 'success', draft: 'info', reviewing: 'warning' } as Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'>)[status] || 'info'
 }
 
 function formatDateTime(dt: string) {

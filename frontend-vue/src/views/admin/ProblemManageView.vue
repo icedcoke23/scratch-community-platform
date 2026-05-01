@@ -130,8 +130,8 @@ const total = ref(0)
 
 const defaultForm = () => ({
   title: '',
-  type: 'choice' as const,
-  difficulty: 'easy' as const,
+  type: 'choice',
+  difficulty: 'easy',
   score: 10,
   description: '',
   options: [

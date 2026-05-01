@@ -82,7 +82,7 @@ function compStatusLabel(s: string) {
   return ({ DRAFT: '草稿', PUBLISHED: '已发布', RUNNING: '进行中', ENDED: '已结束' } as Record<string, string>)[s] || s
 }
 function compStatusType(s: string) {
-  return ({ DRAFT: 'info', PUBLISHED: 'primary', RUNNING: 'success', ENDED: 'danger' } as Record<string, string>)[s] || 'info'
+  return ({ DRAFT: 'info', PUBLISHED: 'primary', RUNNING: 'success', ENDED: 'danger' } as Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'>)[s] || 'info'
 }
 function formatDateTime(dt: string) {
   if (!dt) return '-'

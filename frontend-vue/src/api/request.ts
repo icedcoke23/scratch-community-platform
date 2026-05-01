@@ -1,9 +1,15 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '@/types'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { addError } from '@/utils/errorHandler'
 import { updateServerTimeOffset } from '@/utils'
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    _isRetry?: boolean
+  }
+}
 
 // 从环境变量读取 API 基础路径
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1'
@@ -195,8 +201,8 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return res.data as ApiResponse<T>
 }
 
-export async function post<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
-  const res = await api.post(url, data)
+export async function post<T>(url: string, data?: unknown, params?: Record<string, unknown>): Promise<ApiResponse<T>> {
+  const res = await api.post(url, data, { params })
   return res.data as ApiResponse<T>
 }
 

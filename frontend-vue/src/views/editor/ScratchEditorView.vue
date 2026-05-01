@@ -197,7 +197,9 @@ async function loadProject() {
       project.value = res.data
       projectTitle.value = res.data.title
       projectDescription.value = res.data.description || ''
-      projectTags.value = res.data.tags || ''
+      projectTags.value = Array.isArray(res.data.tags) 
+        ? res.data.tags.join(',') 
+        : res.data.tags || ''
 
       // 构建编辑器 URL
       await buildEditorUrl()

@@ -1,5 +1,10 @@
 import { ref, onBeforeUnmount, type Ref } from 'vue'
 
+export interface DebouncedFunction<T extends (...args: any[]) => any> {
+  (...args: Parameters<T>): void
+  cancel: () => void
+}
+
 /**
  * Debounce composable
  * 
@@ -9,7 +14,7 @@ import { ref, onBeforeUnmount, type Ref } from 'vue'
 export function useDebounce<T extends (...args: any[]) => any>(
   fn: T,
   delay = 300
-): (...args: Parameters<T>) => void {
+): DebouncedFunction<T> {
   let timer: ReturnType<typeof setTimeout> | null = null
 
   function debounced(...args: Parameters<T>) {
@@ -27,7 +32,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
     }
   }
 
-  return debounced
+  return debounced as DebouncedFunction<T>
 }
 
 /**
@@ -95,7 +100,14 @@ export function useDebouncedRef<T>(
 export function useSearchDebounce(
   searchFn: (query: string) => void,
   delay = 500
-) {
+): {
+  searchQuery: Ref<string>
+  isSearching: Ref<boolean>
+  flush: () => void
+  cancel: () => void
+  onInput: (query: string) => void
+  clear: () => void
+} {
   const searchQuery = ref('')
   const isSearching = ref(false)
 
@@ -128,6 +140,8 @@ export function useSearchDebounce(
     searchQuery,
     isSearching,
     onInput,
-    clear
+    clear,
+    flush: () => debouncedSearch.cancel(),
+    cancel: () => debouncedSearch.cancel()
   }
 }

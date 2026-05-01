@@ -41,8 +41,8 @@
         </div>
       </div>
       
-      <div class="card-tags" v-if="project.tags && project.tags.length > 0">
-        <el-tag v-for="(tag, index) in project.tags.slice(0, 3)" :key="index" size="small" class="project-tag">
+      <div class="card-tags" v-if="tagArray && tagArray.length > 0">
+        <el-tag v-for="(tag, index) in tagArray.slice(0, 3)" :key="index" size="small" class="project-tag">
           {{ tag }}
         </el-tag>
       </div>
@@ -51,6 +51,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 defineOptions({ name: 'ProjectCardEnhanced' })
 
 interface Project {
@@ -62,12 +64,12 @@ interface Project {
   views?: number
   likes?: number
   comments?: number
-  tags?: string[]
+  tags?: string | string[]
   isFeatured?: boolean
   createdAt?: string
 }
 
-defineProps<{
+const props = defineProps<{
   project: Project
 }>()
 
@@ -76,6 +78,13 @@ defineEmits<{
 }>()
 
 const defaultThumbnail = 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20project%20placeholder%20colorful%20blocks&image_size=square'
+
+const tagArray = computed(() => {
+  const tags = props.project.tags
+  if (Array.isArray(tags)) return tags
+  if (typeof tags === 'string' && tags) return tags.split(',').map(t => t.trim()).filter(Boolean)
+  return []
+})
 
 function formatNumber(num: number): string {
   if (num >= 10000) {

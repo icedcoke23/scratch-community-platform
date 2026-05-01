@@ -179,7 +179,7 @@ export function useCollabWebSocket(sessionId: () => number | null) {
           currentVersion.value = event.payload.version
         }
         // 触发编辑回调（由组件处理具体逻辑）
-        onEditApplied?.(event.payload as EditOperation)
+        onEditApplied?.(event.payload as unknown as EditOperation)
         break
 
       case 'cursor_update':

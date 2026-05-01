@@ -31,8 +31,25 @@
     </div>
 
     <!-- 平台统计 -->
-    <div v-if="stats" class="stats-section">
-      <div class="stats-grid">
+    <div class="stats-section">
+      <div v-if="statsLoading" class="stats-grid">
+        <div v-for="i in 4" :key="i" class="stat-item stat-skeleton">
+          <el-skeleton animated>
+            <template #template>
+              <div class="skeleton-icon"></div>
+              <div class="skeleton-content">
+                <el-skeleton-item variant="text" style="width: 60px; height: 28px;" />
+                <el-skeleton-item variant="text" style="width: 40px; height: 16px; margin-top: 4px;" />
+              </div>
+            </template>
+          </el-skeleton>
+        </div>
+      </div>
+      <div v-else-if="statsError" class="stats-error">
+        <p>加载失败</p>
+        <el-button @click="loadStats" type="primary" size="small" round>重试</el-button>
+      </div>
+      <div v-else-if="stats" class="stats-grid">
         <div class="stat-item">
           <div class="stat-icon">👥</div>
           <div class="stat-content">
@@ -50,15 +67,15 @@
         <div class="stat-item">
           <div class="stat-icon">📚</div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.totalCourses || 42 }}</div>
-            <div class="stat-label">精品课程</div>
+            <div class="stat-number">{{ stats.totalProjects || 8920 }}</div>
+            <div class="stat-label">作品总数</div>
           </div>
         </div>
         <div class="stat-item">
           <div class="stat-icon">⭐</div>
           <div class="stat-content">
-            <div class="stat-number">{{ stats.totalLikes || 12580 }}</div>
-            <div class="stat-label">点赞总数</div>
+            <div class="stat-number">{{ stats.totalPoints || 12580 }}</div>
+            <div class="stat-label">总点赞数</div>
           </div>
         </div>
       </div>
@@ -75,6 +92,12 @@
       </div>
       <div class="project-grid">
         <LoadingSkeleton v-if="loadingFeatured" :count="4" variant="card" />
+        <template v-else-if="featuredError">
+          <div class="error-state">
+            <p>加载失败，请重试</p>
+            <el-button @click="loadFeaturedProjects" type="primary" size="small" round>重试</el-button>
+          </div>
+        </template>
         <template v-else>
           <ProjectCardEnhanced
             v-for="p in featuredProjects"
@@ -87,34 +110,7 @@
       </div>
     </div>
 
-    <!-- 推荐课程 -->
-    <div class="section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="title-icon">📚</span>
-          推荐课程
-        </h2>
-        <router-link to="/courses" class="more-link">查看更多 →</router-link>
-      </div>
-      <div class="course-grid">
-        <div v-for="course in recommendedCourses" :key="course.id" class="course-card" @click="router.push(`/course/${course.id}`)">
-          <div class="course-cover">
-            <img :src="course.cover" :alt="course.title" />
-            <div class="course-tag">{{ course.category }}</div>
-          </div>
-          <div class="course-info">
-            <h3>{{ course.title }}</h3>
-            <p class="course-desc">{{ course.description }}</p>
-            <div class="course-meta">
-              <span class="course-lessons">{{ course.lessons }} 课时</span>
-              <span class="course-students">{{ course.students }} 人学习</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 热门作品排行 -->
+    <!-- 热门排行 -->
     <div class="section">
       <div class="section-header">
         <h2 class="section-title">
@@ -125,6 +121,12 @@
       </div>
       <div class="project-grid">
         <LoadingSkeleton v-if="loadingHot" :count="4" variant="card" />
+        <template v-else-if="hotError">
+          <div class="error-state">
+            <p>加载失败，请重试</p>
+            <el-button @click="loadHotProjects" type="primary" size="small" round>重试</el-button>
+          </div>
+        </template>
         <template v-else>
           <ProjectCardEnhanced
             v-for="(p, index) in hotProjects"
@@ -137,48 +139,20 @@
         </template>
       </div>
     </div>
-
-    <!-- 资讯动态 -->
-    <div class="section">
-      <div class="section-header">
-        <h2 class="section-title">
-          <span class="title-icon">📰</span>
-          资讯动态
-        </h2>
-        <router-link to="/news" class="more-link">查看更多 →</router-link>
-      </div>
-      <div class="news-grid">
-        <div v-for="news in newsList" :key="news.id" class="news-card" @click="router.push(`/news/${news.id}`)">
-          <div class="news-cover">
-            <img :src="news.cover" :alt="news.title" />
-          </div>
-          <div class="news-info">
-            <div class="news-date">{{ news.date }}</div>
-            <h3>{{ news.title }}</h3>
-            <p class="news-desc">{{ news.description }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from '@/composables/useI18n'
-import { useUserStore } from '@/stores/user'
-import { useToast } from '@/composables/useToast'
 import Carousel from '@/components/Carousel.vue'
 import ProjectCardEnhanced from '@/components/ProjectCardEnhanced.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { socialApi } from '@/api'
+import type { Project } from '@/types'
 
 const router = useRouter()
-const { t } = useI18n()
-const userStore = useUserStore()
-const toast = useToast()
 
 interface Slide {
   image: string
@@ -188,7 +162,6 @@ interface Slide {
   link?: string
 }
 
-// 轮播图数据
 const carouselSlides = ref<Slide[]>([
   {
     image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20kids%20coding%20colorful%20banner&image_size=landscape_16_9',
@@ -213,133 +186,87 @@ const carouselSlides = ref<Slide[]>([
   }
 ])
 
-// 统计数据
-const stats = ref({
-  totalUsers: 12580,
-  publishedProjects: 4589,
-  totalProjects: 8920,
-  totalCourses: 42,
-  totalLikes: 12580
-})
+const stats = ref<{
+  totalUsers: number
+  publishedProjects: number
+  totalProjects: number
+  totalPoints: number
+} | null>(null)
+const statsLoading = ref(true)
+const statsError = ref(false)
 
-// 精选作品
-const featuredProjects = ref<any[]>([])
+const featuredProjects = ref<Project[]>([])
 const loadingFeatured = ref(true)
+const featuredError = ref(false)
 
-// 热门作品
-const hotProjects = ref<any[]>([])
+const hotProjects = ref<Project[]>([])
 const loadingHot = ref(true)
+const hotError = ref(false)
 
-// 推荐课程
-const recommendedCourses = ref([
-  {
-    id: 1,
-    title: 'Scratch 入门到精通',
-    description: '从零开始学习 Scratch 图形化编程',
-    category: '入门',
-    lessons: 24,
-    students: 2345,
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20course%20cover%20colorful&image_size=square'
-  },
-  {
-    id: 2,
-    title: 'Python 编程基础',
-    description: '学习 Python 语言和海龟绘图',
-    category: '进阶',
-    lessons: 32,
-    students: 1876,
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=python%20course%20cover%20programming&image_size=square'
-  },
-  {
-    id: 3,
-    title: '游戏开发实战',
-    description: '使用 Scratch 开发精彩小游戏',
-    category: '实战',
-    lessons: 16,
-    students: 987,
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=game%20development%20course%20cover&image_size=square'
-  },
-  {
-    id: 4,
-    title: '动画制作教程',
-    description: '学习使用 Scratch 制作精美动画',
-    category: '创意',
-    lessons: 12,
-    students: 756,
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=animation%20course%20cover%20scratch&image_size=square'
-  }
-])
-
-// 资讯列表
-const newsList = ref([
-  {
-    id: 1,
-    title: 'Scratch 社区 2.0 全新升级',
-    description: '全新界面，更多功能，更优体验',
-    date: '2024-01-15',
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=software%20upgrade%20announcement%20banner&image_size=square'
-  },
-  {
-    id: 2,
-    title: '寒假编程大赛开始报名',
-    description: '参与比赛，赢取丰厚奖品',
-    date: '2024-01-10',
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=programming%20competition%20announcement&image_size=square'
-  },
-  {
-    id: 3,
-    title: '优秀教师招募计划',
-    description: '加入我们，共同推动编程教育',
-    date: '2024-01-05',
-    cover: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=teacher%20recruitment%20program&image_size=square'
-  }
-])
-
-// 处理轮播图按钮点击
 const handleCarouselButtonClick = (slide: Slide) => {
   if (slide.link) {
     router.push(slide.link)
   }
 }
 
-// 打开编辑器
 const openEditor = (type: string) => {
   if (type === 'scratch') {
     router.push('/editor')
   }
 }
 
-// 加载精选作品
+const loadStats = async () => {
+  try {
+    statsLoading.value = true
+    statsError.value = false
+    stats.value = {
+      totalUsers: 12580,
+      publishedProjects: 4589,
+      totalProjects: 8920,
+      totalPoints: 12580
+    }
+  } catch (e) {
+    console.error('加载统计数据失败', e)
+    statsError.value = true
+  } finally {
+    statsLoading.value = false
+  }
+}
+
 const loadFeaturedProjects = async () => {
   try {
     loadingFeatured.value = true
-    const result = await socialApi.getFeed({ sort: 'featured', limit: 4 })
-    if (result && result.records) {
+    featuredError.value = false
+    const result = await socialApi.getFeed('featured', 1, 4)
+    if (result?.records) {
       featuredProjects.value = result.records
     }
   } catch (e) {
     console.error('加载精选作品失败', e)
+    featuredError.value = true
   } finally {
     loadingFeatured.value = false
   }
 }
 
-// 加载热门作品
 const loadHotProjects = async () => {
   try {
     loadingHot.value = true
-    const result = await socialApi.getFeed({ sort: 'hot', limit: 4 })
-    if (result && result.records) {
+    hotError.value = false
+    const result = await socialApi.getFeed('hot', 1, 4)
+    if (result?.records) {
       hotProjects.value = result.records
     }
   } catch (e) {
     console.error('加载热门作品失败', e)
+    hotError.value = true
   } finally {
     loadingHot.value = false
   }
 }
 
 onMounted(() => {
+  loadStats()
   loadFeaturedProjects()
   loadHotProjects()
 })
@@ -365,7 +292,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.4s ease;
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-  
+
   &:hover {
     transform: translateY(-10px);
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
@@ -389,7 +316,7 @@ onMounted(() => {
   justify-content: center;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
-  
+
   img {
     width: 75%;
     height: 75%;
@@ -399,7 +326,7 @@ onMounted(() => {
 
 .editor-text {
   flex: 1;
-  
+
   h2 {
     color: white;
     font-size: 36px;
@@ -407,7 +334,7 @@ onMounted(() => {
     margin: 0 0 12px 0;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
-  
+
   p {
     color: rgba(255, 255, 255, 0.95);
     font-size: 18px;
@@ -429,13 +356,13 @@ onMounted(() => {
   border: none;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
-  
+
   &:hover {
     background: #f0f0f0;
     transform: scale(1.05);
     color: #764ba2;
   }
-  
+
   .btn-icon {
     margin-right: 8px;
   }
@@ -471,7 +398,7 @@ onMounted(() => {
   text-decoration: none;
   font-weight: 600;
   transition: all 0.3s ease;
-  
+
   &:hover {
     color: #764ba2;
   }
@@ -499,10 +426,41 @@ onMounted(() => {
   gap: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.stat-skeleton {
+  padding: 24px;
+}
+
+.skeleton-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f0f0f0;
+}
+
+.skeleton-content {
+  flex: 1;
+}
+
+.stats-error {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+
+  p {
+    color: #64748b;
+    margin: 0 0 16px 0;
+    font-size: 16px;
   }
 }
 
@@ -535,194 +493,53 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.course-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.course-card {
+.error-state {
+  grid-column: 1 / -1;
+  padding: 60px;
+  text-align: center;
   background: white;
   border-radius: 16px;
-  overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  p {
+    color: #64748b;
+    margin: 0 0 16px 0;
+    font-size: 16px;
   }
-}
-
-.course-cover {
-  position: relative;
-  height: 180px;
-  overflow: hidden;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.course-tag {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(102, 126, 234, 0.95);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.course-info {
-  padding: 20px;
-}
-
-.course-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  color: #1a1a2e;
-}
-
-.course-desc {
-  margin: 0 0 12px 0;
-  color: #64748b;
-  font-size: 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.course-meta {
-  display: flex;
-  gap: 16px;
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.news-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.news-card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.news-cover {
-  width: 140px;
-  flex-shrink: 0;
-  overflow: hidden;
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.news-info {
-  flex: 1;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-.news-date {
-  color: #94a3b8;
-  font-size: 12px;
-  margin-bottom: 8px;
-}
-
-.news-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  color: #1a1a2e;
-}
-
-.news-desc {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  flex: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 @media (max-width: 768px) {
   .section {
     padding: 30px 16px;
   }
-  
+
   .section-title {
     font-size: 22px;
   }
-  
+
   .editor-card-content {
     flex-direction: column;
     padding: 40px 30px;
     text-align: center;
     gap: 24px;
   }
-  
+
   .editor-icon-large {
     width: 100px;
     height: 100px;
   }
-  
+
   .editor-text h2 {
     font-size: 28px;
   }
-  
+
   .editor-text p {
     font-size: 16px;
   }
-  
+
   .project-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 16px;
-  }
-  
-  .course-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-  }
-  
-  .news-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .news-card {
-    flex-direction: column;
-  }
-  
-  .news-cover {
-    width: 100%;
-    height: 180px;
   }
 }
 </style>
