@@ -43,7 +43,7 @@ export default defineConfig({
   // 全局共享配置
   use: {
     // 基础 URL，所有相对 URL 都会基于此
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3002',
 
     // 测试失败时自动截图
     screenshot: 'only-on-failure',
@@ -83,7 +83,7 @@ export default defineConfig({
   // 开发服务器配置（运行测试前自动启动）
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3002',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
