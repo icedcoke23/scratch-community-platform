@@ -238,8 +238,8 @@ const loadFeaturedProjects = async () => {
     loadingFeatured.value = true
     featuredError.value = false
     const result = await socialApi.getFeed('featured', 1, 4)
-    if (result?.records) {
-      featuredProjects.value = result.records
+    if (result?.data?.records) {
+      featuredProjects.value = result.data.records
     }
   } catch (e) {
     console.error('加载精选作品失败', e)
@@ -254,8 +254,8 @@ const loadHotProjects = async () => {
     loadingHot.value = true
     hotError.value = false
     const result = await socialApi.getFeed('hot', 1, 4)
-    if (result?.records) {
-      hotProjects.value = result.records
+    if (result?.data?.records) {
+      hotProjects.value = result.data.records
     }
   } catch (e) {
     console.error('加载热门作品失败', e)

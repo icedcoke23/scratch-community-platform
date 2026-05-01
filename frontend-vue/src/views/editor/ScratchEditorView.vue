@@ -62,17 +62,53 @@
 
     <!-- Scratch 编辑器主体 -->
     <div class="editor-container" ref="editorContainer">
+      <!-- 加载状态 -->
       <div v-if="loading" class="editor-loading">
-        <el-icon class="loading-icon"><Loading /></el-icon>
-        <p>{{ t('editor.loading') }}</p>
-        <p class="loading-hint">{{ t('editor.loadingHint') }}</p>
+        <div class="loading-content">
+          <el-icon class="loading-icon"><Loading /></el-icon>
+          <p class="loading-text">{{ loadingMessage }}</p>
+          <p class="loading-hint">{{ t('editor.loadingHint') }}</p>
+          <div class="loading-progress">
+            <el-progress :percentage="loadProgress" :stroke-width="4" :show-text="false" />
+          </div>
+          <div v-if="showRetryButton" class="loading-actions">
+            <el-button @click="retryLoad" type="primary" size="small">
+              重试加载
+            </el-button>
+            <el-button @click="openBlankEditor" type="default" size="small">
+              打开空白编辑器
+            </el-button>
+          </div>
+        </div>
       </div>
+
+      <!-- 错误状态 -->
+      <div v-else-if="loadError" class="editor-error">
+        <el-icon class="error-icon"><WarningFilled /></el-icon>
+        <h3 class="error-title">加载失败</h3>
+        <p class="error-message">{{ loadError }}</p>
+        <div class="error-actions">
+          <el-button @click="retryLoad" type="primary" size="small">
+            重试
+          </el-button>
+          <el-button @click="openBlankEditor" type="default" size="small">
+            打开空白编辑器
+          </el-button>
+          <el-button @click="goBack" type="info" size="small">
+            返回
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 编辑器 iframe -->
       <iframe
+        v-else
         ref="scratchFrame"
         :src="editorUrl"
         class="scratch-iframe"
         :class="{ 'fullscreen': isFullscreen }"
         @load="onIframeLoad"
+        @error="onIframeError"
         allow="clipboard-read; clipboard-write"
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       />
@@ -117,7 +153,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  ArrowLeft, Edit, FullScreen, Check, Download, Loading, Upload
+  ArrowLeft, Edit, FullScreen, Check, Download, Loading, Upload, WarningFilled
 } from '@element-plus/icons-vue'
 import { projectApi } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -137,6 +173,10 @@ const userStore = useUserStore()
 
 // 状态
 const loading = ref(true)
+const loadError = ref<string | null>(null)
+const loadingMessage = ref('正在加载编辑器...')
+const loadProgress = ref(0)
+const showRetryButton = ref(false)
 const saving = ref(false)
 const publishing = ref(false)
 const isDirty = ref(false)
@@ -160,6 +200,14 @@ const editorContainer = ref<HTMLDivElement>()
 let autoSaveTimer: ReturnType<typeof setInterval> | null = null
 const AUTO_SAVE_INTERVAL = 60000
 
+// 超时定时器
+let timeoutTimer: ReturnType<typeof setTimeout> | null = null
+const TIMEOUT_MS = 20000 // 20秒
+
+// 加载重试计数
+let retryCount = 0
+const MAX_RETRIES = 3
+
 // ScratchBridge 实例
 let scratchBridge: ScratchBridge | null = null
 
@@ -176,7 +224,7 @@ const isNewProject = computed(() => !route.params.id || route.params.id === 'new
  * - 完全自主可控，不依赖外部服务
  * - 可定制 UI（logo/菜单/颜色）
  * - 支持深度集成（云变量/背包）
- * - 同域名通信，无需 CORS 处理
+ * - 同域通信，无需 CORS 处理
  */
 const editorUrl = ref('about:blank')
 
@@ -184,14 +232,29 @@ const editorUrl = ref('about:blank')
  * 加载项目信息 + 构建编辑器 URL
  */
 async function loadProject() {
+  // 重置状态
+  loading.value = true
+  loadError.value = null
+  loadingMessage.value = '正在加载编辑器...'
+  loadProgress.value = 10
+  showRetryButton.value = false
+
   if (isNewProject.value) {
-    // 新建项目：直接加载空白 Scratch 编辑器，不等待后端请求
+    // 新建项目：直接加载空白 Scratch 编辑器
+    loadingMessage.value = '正在初始化编辑器...'
+    loadProgress.value = 30
     editorUrl.value = buildLocalEditorUrl('')
-    loading.value = false
+    loadProgress.value = 60
+    
+    // 模拟进度动画
+    simulateProgress()
     return
   }
 
   try {
+    loadingMessage.value = '正在加载项目信息...'
+    loadProgress.value = 20
+    
     const res = await projectApi.getDetail(Number(route.params.id))
     if (res.code === 0 && res.data) {
       project.value = res.data
@@ -201,14 +264,76 @@ async function loadProject() {
         ? res.data.tags.join(',') 
         : res.data.tags || ''
 
+      loadingMessage.value = '正在构建编辑器...'
+      loadProgress.value = 50
+
       // 构建编辑器 URL
       await buildEditorUrl()
+      
+      loadProgress.value = 80
+      simulateProgress()
+    } else {
+      throw new Error(res.msg || '加载项目失败')
     }
   } catch (e) {
-    ElMessage.error(t('editor.loadFailed'))
-  } finally {
+    logger.error('加载项目失败:', e)
+    const errorMsg = e instanceof Error ? e.message : '加载项目失败'
+    loadError.value = errorMsg
     loading.value = false
   }
+}
+
+/**
+ * 模拟进度动画
+ */
+function simulateProgress() {
+  let currentProgress = loadProgress.value
+  
+  const progressInterval = setInterval(() => {
+    if (currentProgress >= 95) {
+      clearInterval(progressInterval)
+      return
+    }
+    currentProgress += 2
+    loadProgress.value = Math.min(currentProgress, 95)
+  }, 200)
+
+  // 超时检查
+  if (timeoutTimer) clearTimeout(timeoutTimer)
+  timeoutTimer = setTimeout(() => {
+    if (loading.value) {
+      logger.warn('Scratch 加载超时（20s）')
+      showRetryButton.value = true
+      loadingMessage.value = '加载时间过长...'
+    }
+  }, TIMEOUT_MS)
+}
+
+/**
+ * 重试加载
+ */
+async function retryLoad() {
+  retryCount++
+  if (retryCount >= MAX_RETRIES) {
+    ElMessage.warning('重试次数过多，请尝试打开空白编辑器')
+    return
+  }
+  
+  logger.log(`重试加载（第 ${retryCount} 次）`)
+  loadProject()
+}
+
+/**
+ * 打开空白编辑器
+ */
+function openBlankEditor() {
+  logger.log('打开空白编辑器')
+  loading.value = true
+  loadError.value = null
+  loadingMessage.value = '正在打开空白编辑器...'
+  loadProgress.value = 50
+  editorUrl.value = buildLocalEditorUrl('')
+  simulateProgress()
 }
 
 /**
@@ -255,8 +380,17 @@ async function buildEditorUrl() {
 
 // iframe HTML 加载完成（此时 Scratch VM 可能还未就绪）
 function onIframeLoad() {
-  // 不在这里隐藏 loading —— 等 editor-ready 消息确认 Scratch 就绪后再隐藏
+  logger.log('iframe 加载完成')
+  loadingMessage.value = '正在初始化编辑器...'
+  loadProgress.value = 90
   setupEditorCommunication()
+}
+
+// iframe 加载错误
+function onIframeError() {
+  logger.error('iframe 加载错误')
+  loadError.value = '编辑器加载失败，请检查网络连接'
+  loading.value = false
 }
 
 // 设置与 Scratch 编辑器的通信
@@ -269,7 +403,8 @@ function setupEditorCommunication() {
       editorReady.value = true
       logger.log('Scratch 编辑器就绪（editor-ready 消息已收到）')
       // 编辑器 HTML 已就绪，但项目可能还在加载中
-      // 不在这里隐藏 loading，等 project-loaded 消息
+      loadingMessage.value = '正在初始化虚拟机...'
+      loadProgress.value = 98
     },
     onVmReady() {
       logger.log('Scratch VM 初始化完成')
@@ -283,24 +418,19 @@ function setupEditorCommunication() {
     onProjectLoaded() {
       logger.log('Scratch 项目加载完成（project-loaded 消息已收到）')
       loading.value = false
+      loadProgress.value = 100
+      clearTimeout(timeoutTimer!)
     },
     onError(error) {
       logger.warn('Scratch 错误:', error)
       // 如果是超时错误，也隐藏 loading
       if (error.includes('超时')) {
         loading.value = false
+        loadError.value = '编辑器加载超时，请重试'
       }
     }
   })
   scratchBridge.start()
-
-  // 兜底：如果 20 秒后仍未收到 project-loaded，强制隐藏 loading
-  setTimeout(() => {
-    if (loading.value) {
-      logger.warn('Scratch 加载超时（20s），强制隐藏 loading')
-      loading.value = false
-    }
-  }, 20000)
 }
 
 /**
@@ -517,6 +647,10 @@ onBeforeUnmount(() => {
     clearInterval(autoSaveTimer)
     autoSaveTimer = null
   }
+  if (timeoutTimer) {
+    clearTimeout(timeoutTimer)
+    timeoutTimer = null
+  }
 })
 
 // 键盘快捷键
@@ -553,112 +687,151 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="less">
 .scratch-editor-page {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: #1e1e2e;
+  background-color: #f5f7fa;
 }
 
 .editor-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  background: white;
+  border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   z-index: 10;
-  flex-shrink: 0;
-}
 
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+  .toolbar-left,
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+  .title-input {
+    width: 300px;
 
-.title-input {
-  width: 240px;
-}
-
-.title-input :deep(.el-input__inner) {
-  font-weight: 600;
-  font-size: 15px;
-  border: none;
-  background: transparent;
-}
-
-.title-input :deep(.el-input__inner:focus) {
-  background: var(--bg);
-  border-radius: var(--radius-sm);
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+    }
+  }
 }
 
 .editor-container {
   flex: 1;
   position: relative;
   overflow: hidden;
+  background: #272822;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+  }
 }
 
 .scratch-iframe {
   width: 100%;
   height: 100%;
   border: none;
+  background: #f0f0f0;
 }
 
-.scratch-iframe.fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-}
-
-.editor-loading {
+.editor-loading,
+.editor-error {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  background: #1e1e2e;
-  color: #cdd6f4;
-  z-index: 5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: 100;
+}
+
+.loading-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 40px;
 }
 
 .loading-icon {
-  font-size: 48px;
-  animation: spin 1s linear infinite;
+  font-size: 64px;
+  animation: rotate 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
 }
 
 .loading-hint {
-  font-size: 12px;
-  color: #6c7086;
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 0 0 24px 0;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.loading-progress {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.loading-actions,
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-icon {
+  font-size: 64px;
+  color: #ffd700;
+  margin-bottom: 20px;
+}
+
+.error-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.error-message {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 0 0 24px 0;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
   .editor-toolbar {
-    padding: 6px 10px;
+    padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 6px;
-  }
+    gap: 10px;
 
-  .title-input {
-    width: 150px;
-  }
-
-  .toolbar-right {
-    gap: 4px;
+    .title-input {
+      width: 150px;
+    }
   }
 }
 </style>
