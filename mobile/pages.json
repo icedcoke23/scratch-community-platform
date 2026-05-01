@@ -8,6 +8,13 @@
       }
     },
     {
+      "path": "pages/index/search",
+      "style": {
+        "navigationBarTitleText": "搜索",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/project/detail",
       "style": {
         "navigationBarTitleText": "作品详情"

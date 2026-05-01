@@ -219,15 +219,25 @@ const loadStats = async () => {
   try {
     statsLoading.value = true
     statsError.value = false
+    const res = await statsApi.getStats()
+    if (res?.data) {
+      stats.value = {
+        totalUsers: res.data.totalUsers || 0,
+        publishedProjects: res.data.publishedProjects || 0,
+        totalProjects: res.data.totalProjects || 0,
+        totalPoints: res.data.totalPoints || 0
+      }
+    }
+  } catch (e) {
+    console.error('加载统计数据失败', e)
+    statsError.value = true
+    // 降级显示模拟数据
     stats.value = {
       totalUsers: 12580,
       publishedProjects: 4589,
       totalProjects: 8920,
       totalPoints: 12580
     }
-  } catch (e) {
-    console.error('加载统计数据失败', e)
-    statsError.value = true
   } finally {
     statsLoading.value = false
   }
