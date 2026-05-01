@@ -164,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '@/composables/useI18n'
 import { useUserStore } from '@/stores/user'
@@ -173,38 +173,43 @@ import Carousel from '@/components/Carousel.vue'
 import ProjectCardEnhanced from '@/components/ProjectCardEnhanced.vue'
 import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import * as api from '@/api'
+import { socialApi } from '@/api'
 
 const router = useRouter()
 const { t } = useI18n()
 const userStore = useUserStore()
-const { toast } = useToast()
+const toast = useToast()
+
+interface Slide {
+  image: string
+  title: string
+  description: string
+  buttonText?: string
+  link?: string
+}
 
 // 轮播图数据
-const carouselSlides = ref([
+const carouselSlides = ref<Slide[]>([
   {
-    id: 1,
     image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=scratch%20programming%20kids%20coding%20colorful%20banner&image_size=landscape_16_9',
     title: '欢迎来到 Scratch 社区',
-    subtitle: '让每个孩子都能享受到编程的乐趣',
+    description: '让每个孩子都能享受到编程的乐趣',
     buttonText: '开始探索',
-    buttonAction: '/feed'
+    link: '/feed'
   },
   {
-    id: 2,
     image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=coding%20course%20education%20banner&image_size=landscape_16_9',
     title: '精品编程课程',
-    subtitle: '从入门到精通，系统化学习编程',
+    description: '从入门到精通，系统化学习编程',
     buttonText: '查看课程',
-    buttonAction: '/courses'
+    link: '/courses'
   },
   {
-    id: 3,
     image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=programming%20competition%20challenge%20banner&image_size=landscape_16_9',
     title: '编程竞赛活动',
-    subtitle: '参与竞赛，挑战自我，赢取荣誉',
+    description: '参与竞赛，挑战自我，赢取荣誉',
     buttonText: '立即参与',
-    buttonAction: '/competition'
+    link: '/competition'
   }
 ])
 
@@ -291,9 +296,9 @@ const newsList = ref([
 ])
 
 // 处理轮播图按钮点击
-const handleCarouselButtonClick = (slide: any) => {
-  if (slide.buttonAction) {
-    router.push(slide.buttonAction)
+const handleCarouselButtonClick = (slide: Slide) => {
+  if (slide.link) {
+    router.push(slide.link)
   }
 }
 
@@ -308,17 +313,12 @@ const openEditor = (type: string) => {
 const loadFeaturedProjects = async () => {
   try {
     loadingFeatured.value = true
-    const result = await api.searchProjects({ sort: 'featured', limit: 4 })
-    featuredProjects.value = result.projects
+    const result = await socialApi.getFeed({ sort: 'featured', limit: 4 })
+    if (result && result.records) {
+      featuredProjects.value = result.records
+    }
   } catch (e) {
     console.error('加载精选作品失败', e)
-    // 使用模拟数据
-    featuredProjects.value = [
-      { id: 1, title: '太空冒险', author: { username: '小创客' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=space%20adventure%20game%20scratch&image_size=square', views: 2568, likes: 342 },
-      { id: 2, title: '数学大挑战', author: { username: '数学达人' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=math%20challenge%20game&image_size=square', views: 1892, likes: 256 },
-      { id: 3, title: '音乐节拍器', author: { username: '小音乐家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=music%20beat%20rhythm%20game&image_size=square', views: 1456, likes: 189 },
-      { id: 4, title: '迷宫探险', author: { username: '探险家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=maze%20adventure%20puzzle%20game&image_size=square', views: 1234, likes: 156 }
-    ]
   } finally {
     loadingFeatured.value = false
   }
@@ -328,17 +328,12 @@ const loadFeaturedProjects = async () => {
 const loadHotProjects = async () => {
   try {
     loadingHot.value = true
-    const result = await api.searchProjects({ sort: 'hot', limit: 4 })
-    hotProjects.value = result.projects
+    const result = await socialApi.getFeed({ sort: 'hot', limit: 4 })
+    if (result && result.records) {
+      hotProjects.value = result.records
+    }
   } catch (e) {
     console.error('加载热门作品失败', e)
-    // 使用模拟数据
-    hotProjects.value = [
-      { id: 5, title: '愤怒的小鸟', author: { username: '游戏玩家' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=angry%20birds%20style%20game&image_size=square', views: 3456, likes: 456 },
-      { id: 6, title: '跑酷大作战', author: { username: '运动健将' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=parkour%20running%20game&image_size=square', views: 2890, likes: 389 },
-      { id: 7, title: '记忆翻牌', author: { username: '记忆大师' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=memory%20card%20matching%20game&image_size=square', views: 2123, likes: 278 },
-      { id: 8, title: '打地鼠', author: { username: '快枪手' }, thumbnail: 'https://trae-api-cn.mchost.guru/api/ide/v1/text-to-image?prompt=whack%20a%20mole%20game&image_size=square', views: 1876, likes: 234 }
-    ]
   } finally {
     loadingHot.value = false
   }
