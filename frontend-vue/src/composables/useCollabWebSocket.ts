@@ -8,6 +8,19 @@ import type { CollabEvent, CollabParticipant, EditOperation } from '@/api/collab
 const log = createLogger('Collab')
 
 /**
+ * 协作编辑冲突数据
+ */
+interface ConflictData {
+  type: 'update' | 'delete' | 'version_mismatch'
+  field?: string
+  localValue?: unknown
+  remoteValue?: unknown
+  expectedVersion?: number
+  actualVersion?: number
+  message?: string
+}
+
+/**
  * 协作编辑 WebSocket 组合式函数
  *
  * 使用 STOMP over SockJS 连接后端 WebSocket 端点
@@ -26,7 +39,7 @@ export function useCollabWebSocket(sessionId: () => number | null) {
   const participants = ref<CollabParticipant[]>([])
   const currentVersion = ref(0)
   const chatMessages = ref<Array<{ userId: number; nickname: string; message: string; timestamp: number }>>([])
-  const conflictData = ref<any>(null)
+  const conflictData = ref<ConflictData | null>(null)
   const reconnectAttempt = ref(0)
 
   // 重连配置
